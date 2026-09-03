@@ -6,6 +6,7 @@ resources:
   - serviceaccount.yaml
   - rbac.yaml
   - configmap.yaml
+  - pvc.yaml
   - quota.yaml
   - deployment.yaml
   - service.yaml
