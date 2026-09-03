@@ -11,3 +11,17 @@ SPA légère (HTML/CSS/JS) branchée sur l’API OpenYard.
 | VM Linux | Catalogue Ubuntu, launch/stop/start |
 
 La clé API est stockée en `localStorage` (démo locale uniquement).
+
+## Wireframe
+
+```mermaid
+flowchart TB
+  subgraph console [Cloud Console]
+    Nav[API key + projet]
+    Tabs[Projets | Workloads | VM]
+    Main[Formulaires + tableaux]
+    Poll[Poll statut]
+  end
+  Nav --> Tabs --> Main
+  Poll --> Main
+```
