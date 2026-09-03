@@ -26,6 +26,20 @@
     </header>
 
     <div class="shell" style="padding-top: 1.25rem">
+      <div class="auth-bar">
+        <label class="auth-key">
+          API key
+          <input
+            id="api-key"
+            type="password"
+            autocomplete="off"
+            placeholder="requis si OPENYARD_API_KEY est défini"
+          />
+        </label>
+        <button class="btn btn-ghost btn-sm" type="button" id="save-key-btn">Enregistrer</button>
+        <span class="chip" id="auth-chip">auth…</span>
+        <span class="chip" id="poll-chip">live off</span>
+      </div>
       <div class="tabs" role="tablist" aria-label="Ressources">
         <button class="tab is-active" type="button" data-tab="workloads" role="tab" aria-selected="true">
           Workloads
@@ -39,7 +53,7 @@
     <div class="shell console-layout" data-panel="workloads">
       <aside class="side-panel">
         <h2>Nouveau workload</h2>
-        <p>Image Docker → pods Kubernetes après Apply.</p>
+        <p>Image Docker → pods Kubernetes. Coche Apply pour déployer tout de suite.</p>
         <form id="create-form" class="form-grid" autocomplete="off">
           <label>
             Nom
@@ -56,6 +70,10 @@
           <label>
             Réplicas
             <input id="replicas" name="replicas" type="number" min="1" max="5" value="1" required />
+          </label>
+          <label class="check">
+            <input id="apply" name="apply" type="checkbox" checked />
+            Appliquer sur le cluster (Apply)
           </label>
           <button class="btn btn-solid" type="submit">Créer</button>
         </form>

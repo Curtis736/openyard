@@ -73,6 +73,19 @@ brew install --cask multipass
 OPENYARD_COMPUTE=multipass make run
 ```
 
+## Auth (optionnelle)
+
+Si `OPENYARD_API_KEY` est défini, l’API exige le header `X-API-Key`
+(sauf `/`, `/console`, `/assets`, `/health`, `/metrics`, `/docs`).
+
+```bash
+export OPENYARD_API_KEY='change-me'
+make run
+curl -s -H "X-API-Key: change-me" http://127.0.0.1:8000/workloads
+```
+
+Dans la console : champ **API key** (stocké en localStorage).
+
 ## Local (API + site)
 
 ```bash
@@ -143,6 +156,7 @@ Détruire : `make down`
 - ResourceQuota + LimitRange
 - NetworkPolicy : ingress depuis `ingress-nginx`, egress DNS + API Kubernetes
 - Token de ServiceAccount monté uniquement sur le plan de contrôle (pour apply)
+- Auth API optionnelle : `OPENYARD_API_KEY` + header `X-API-Key`
 
 ## CI
 

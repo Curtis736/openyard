@@ -354,6 +354,34 @@ code,
   margin-bottom: 0.25rem;
 }
 
+.auth-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+}
+
+.auth-key {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.82rem;
+  color: var(--fg-muted);
+  min-width: min(18rem, 100%);
+  flex: 1;
+}
+
+.auth-key input {
+  width: 100%;
+  min-height: 2.2rem;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 0.55rem;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+}
+
 .tab {
   appearance: none;
   border: 0;

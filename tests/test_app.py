@@ -23,6 +23,24 @@ def test_health() -> None:
     body = response.json()
     assert body["status"] == "ok"
     assert "cluster" in body
+    assert "auth_required" in body
+    assert body["auth_required"] is False
+
+
+def test_api_key_protects_workloads(monkeypatch) -> None:
+    monkeypatch.setenv("OPENYARD_API_KEY", "test-secret-key")
+    denied = client.get("/workloads")
+    assert denied.status_code == 401
+
+    ok = client.get("/workloads", headers={"X-API-Key": "test-secret-key"})
+    assert ok.status_code == 200
+
+    public = client.get("/health")
+    assert public.status_code == 200
+    assert public.json()["auth_required"] is True
+
+    landing = client.get("/")
+    assert landing.status_code == 200
 
 
 def test_create_list_manifest_and_delete() -> None:
@@ -183,8 +201,8 @@ def test_landing_and_console() -> None:
 
     console = client.get("/console")
     assert console.status_code == 200
-    assert b"Nouveau workload" in console.content
-    assert b"VM Linux" in console.content
+    assert b"Appliquer sur le cluster" in console.content
+    assert b"api-key" in console.content
     assert b"/assets/js/console.js" in console.content
 
     css = client.get("/assets/css/site.css")

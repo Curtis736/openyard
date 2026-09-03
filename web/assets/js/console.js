@@ -1,4 +1,5 @@
 (() => {
+  const KEY_STORAGE = "openyard.apiKey";
   const toastEl = document.getElementById("toast");
   const statsEl = document.getElementById("stats");
   const bodyEl = document.getElementById("workloads-body");
@@ -9,10 +10,27 @@
   const instanceStats = document.getElementById("instance-stats");
   const irefreshBtn = document.getElementById("irefresh-btn");
   const driverHint = document.getElementById("driver-hint");
+  const apiKeyInput = document.getElementById("api-key");
+  const saveKeyBtn = document.getElementById("save-key-btn");
+  const authChip = document.getElementById("auth-chip");
+  const pollChip = document.getElementById("poll-chip");
   const modal = document.getElementById("modal");
   const modalTitle = document.getElementById("modal-title");
   const modalBody = document.getElementById("modal-body");
   const modalClose = document.getElementById("modal-close");
+
+  let pollTimer = null;
+
+  function getApiKey() {
+    return (apiKeyInput?.value || localStorage.getItem(KEY_STORAGE) || "").trim();
+  }
+
+  function authHeaders(extra = {}) {
+    const headers = { ...extra };
+    const key = getApiKey();
+    if (key) headers["X-API-Key"] = key;
+    return headers;
+  }
 
   function toast(message, isError = false) {
     toastEl.textContent = message;
@@ -23,12 +41,14 @@
   }
 
   async function api(path, options = {}) {
+    const { headers: optHeaders, ...rest } = options;
     const res = await fetch(path, {
-      headers: {
+      ...rest,
+      headers: authHeaders({
         Accept: "application/json",
         ...(options.body ? { "Content-Type": "application/json" } : {}),
-      },
-      ...options,
+        ...optHeaders,
+      }),
     });
     if (res.status === 204) return null;
     const text = await res.text();
@@ -52,7 +72,9 @@
   }
 
   async function fetchText(path) {
-    const res = await fetch(path, { headers: { Accept: "application/yaml, text/plain, */*" } });
+    const res = await fetch(path, {
+      headers: authHeaders({ Accept: "application/yaml, text/plain, */*" }),
+    });
     const text = await res.text();
     if (!res.ok) throw new Error(text || res.statusText);
     return text;
@@ -76,6 +98,22 @@
   function closeModal() {
     modal.classList.remove("open");
     modal.hidden = true;
+  }
+
+  async function loadAuthChip() {
+    try {
+      const h = await fetch("/health").then((r) => r.json());
+      if (h.auth_required) {
+        authChip.textContent = getApiKey() ? "auth ON" : "clé requise";
+        authChip.className = `chip ${getApiKey() ? "chip-ok" : "chip-off"}`;
+      } else {
+        authChip.textContent = "auth off";
+        authChip.className = "chip";
+      }
+    } catch {
+      authChip.textContent = "auth ?";
+      authChip.className = "chip chip-off";
+    }
   }
 
   async function loadStats() {
@@ -169,7 +207,19 @@
   }
 
   async function refresh() {
+    await loadAuthChip();
     await Promise.all([loadStats(), loadWorkloads(), loadInstances()]);
+  }
+
+  function startPolling() {
+    window.clearInterval(pollTimer);
+    pollTimer = window.setInterval(() => {
+      refresh().catch(() => {});
+    }, 5000);
+    if (pollChip) {
+      pollChip.textContent = "live 5s";
+      pollChip.className = "chip chip-ok";
+    }
   }
 
   document.querySelectorAll(".tab").forEach((tab) => {
@@ -195,13 +245,16 @@
       image: form.image.value.trim(),
       port: Number(form.port.value),
       replicas: Number(form.replicas.value),
+      apply: Boolean(form.apply?.checked),
     };
     try {
-      await api("/workloads", { method: "POST", body: JSON.stringify(payload) });
+      const created = await api("/workloads", { method: "POST", body: JSON.stringify(payload) });
       form.reset();
       form.port.value = "8080";
       form.replicas.value = "1";
-      toast(`Workload « ${payload.name} » créé`);
+      form.apply.checked = true;
+      const suffix = payload.apply ? ` · ${created.status}` : "";
+      toast(`Workload « ${payload.name} » créé${suffix}`);
       await refresh();
     } catch (err) {
       toast(err.message, true);
@@ -295,6 +348,15 @@
     }
   });
 
+  if (apiKeyInput) {
+    apiKeyInput.value = localStorage.getItem(KEY_STORAGE) || "";
+  }
+  saveKeyBtn?.addEventListener("click", () => {
+    localStorage.setItem(KEY_STORAGE, getApiKey());
+    toast("API key enregistrée dans ce navigateur");
+    refresh().catch((err) => toast(err.message, true));
+  });
+
   refreshBtn.addEventListener("click", () => refresh().catch((err) => toast(err.message, true)));
   irefreshBtn.addEventListener("click", () => refresh().catch((err) => toast(err.message, true)));
   modalClose.addEventListener("click", closeModal);
@@ -305,8 +367,11 @@
     if (e.key === "Escape") closeModal();
   });
 
-  refresh().catch((err) => {
-    bodyEl.innerHTML = `<tr><td colspan="4" class="empty">${err.message}</td></tr>`;
-    toast(err.message, true);
-  });
+  refresh()
+    .then(startPolling)
+    .catch((err) => {
+      bodyEl.innerHTML = `<tr><td colspan="4" class="empty">${err.message}</td></tr>`;
+      toast(err.message, true);
+      startPolling();
+    });
 })();

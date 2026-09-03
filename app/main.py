@@ -3,11 +3,12 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Response, status
-from fastapi.responses import FileResponse, PlainTextResponse
+from fastapi import FastAPI, HTTPException, Request, Response, status
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 
 from app import __version__
+from app.auth import api_key_configured, api_key_valid, is_public_path
 from app.cluster import (
     ClusterError,
     ClusterUnavailable,
@@ -46,7 +47,8 @@ app = FastAPI(
     version=__version__,
     description=(
         "Open cloud open source : site + console + API. Workloads Docker → pods "
-        "Kubernetes, et VM Linux Ubuntu (sim ou Multipass)."
+        "Kubernetes, et VM Linux Ubuntu (sim ou Multipass). Auth optionnelle via "
+        "header X-API-Key (OPENYARD_API_KEY)."
     ),
 )
 
@@ -54,6 +56,19 @@ if WEB_DIR.is_dir():
     assets = WEB_DIR / "assets"
     if assets.is_dir():
         app.mount("/assets", StaticFiles(directory=assets), name="assets")
+
+
+@app.middleware("http")
+async def require_api_key(request: Request, call_next):
+    if not api_key_configured() or is_public_path(request.url.path):
+        return await call_next(request)
+    if api_key_valid(request.headers.get("x-api-key")):
+        return await call_next(request)
+    return JSONResponse(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        content={"detail": "API key invalide ou manquante (header X-API-Key)"},
+        headers={"WWW-Authenticate": "ApiKey"},
+    )
 
 
 def _cluster_http(exc: Exception) -> HTTPException:
@@ -93,6 +108,7 @@ def health() -> dict[str, object]:
         "version": __version__,
         "cluster": cluster_enabled(),
         "compute": compute_driver_name(),
+        "auth_required": api_key_configured(),
     }
 
 
