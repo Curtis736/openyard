@@ -280,9 +280,9 @@ def test_landing_and_console() -> None:
 
     console = client.get("/console")
     assert console.status_code == 200
-    assert b"Appliquer sur le cluster" in console.content
-    assert b"api-key" in console.content
-    assert b"Projets" in console.content
+    assert b"Cloud Console" in console.content
+    assert b"Vue d" in console.content
+    assert b"preset-web" in console.content
     assert b"/assets/js/console.js" in console.content
 
     css = client.get("/assets/css/site.css")

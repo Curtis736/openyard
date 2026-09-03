@@ -1,12 +1,15 @@
 (() => {
   const KEY_STORAGE = "openyard.apiKey";
+  const PROJECT_STORAGE = "openyard.project";
   const toastEl = document.getElementById("toast");
   const statsEl = document.getElementById("stats");
+  const overviewStats = document.getElementById("overview-stats");
   const bodyEl = document.getElementById("workloads-body");
   const form = document.getElementById("create-form");
   const refreshBtn = document.getElementById("refresh-btn");
   const projectForm = document.getElementById("project-form");
   const projectsBody = document.getElementById("projects-body");
+  const projectSelect = document.getElementById("project-select");
   const prefreshBtn = document.getElementById("prefresh-btn");
   const instanceForm = document.getElementById("instance-form");
   const instancesBody = document.getElementById("instances-body");
@@ -21,8 +24,11 @@
   const modalTitle = document.getElementById("modal-title");
   const modalBody = document.getElementById("modal-body");
   const modalClose = document.getElementById("modal-close");
+  const presetWeb = document.getElementById("preset-web");
+  const presetVm = document.getElementById("preset-vm");
 
   let pollTimer = null;
+  let projectKeys = {};
 
   function getApiKey() {
     return (apiKeyInput?.value || localStorage.getItem(KEY_STORAGE) || "").trim();
@@ -40,7 +46,7 @@
     toastEl.classList.toggle("error", isError);
     toastEl.classList.add("show");
     window.clearTimeout(toast._t);
-    toast._t = window.setTimeout(() => toastEl.classList.remove("show"), 3200);
+    toast._t = window.setTimeout(() => toastEl.classList.remove("show"), 3600);
   }
 
   async function api(path, options = {}) {
@@ -87,7 +93,6 @@
     const s = (status || "").toLowerCase();
     if (s.includes("ready") || s === "running") return "status-ready";
     if (s.includes("deploy") || s === "pending") return "status-deploying";
-    if (s === "stopped") return "status-registered";
     return "status-registered";
   }
 
@@ -103,6 +108,19 @@
     modal.hidden = true;
   }
 
+  function switchTab(target) {
+    document.querySelectorAll(".tab").forEach((t) => {
+      const on = t.dataset.tab === target;
+      t.classList.toggle("is-active", on);
+      t.setAttribute("aria-selected", on ? "true" : "false");
+    });
+    document.querySelectorAll("[data-panel]").forEach((panel) => {
+      const on = panel.dataset.panel === target;
+      panel.hidden = !on;
+      panel.classList.toggle("is-hidden", !on);
+    });
+  }
+
   async function loadAuthChip() {
     try {
       const h = await fetch("/health").then((r) => r.json());
@@ -110,8 +128,8 @@
         authChip.textContent = getApiKey() ? "auth ON" : "clé requise";
         authChip.className = `chip ${getApiKey() ? "chip-ok" : "chip-off"}`;
       } else {
-        authChip.textContent = "auth off";
-        authChip.className = "chip";
+        authChip.textContent = getApiKey() ? "projet key" : "default";
+        authChip.className = "chip chip-ok";
       }
     } catch {
       authChip.textContent = "auth ?";
@@ -119,16 +137,32 @@
     }
   }
 
+  function renderOverview(s) {
+    if (!overviewStats) return;
+    const on = Boolean(s.cluster_mode);
+    overviewStats.innerHTML = `
+      <span class="chip"><strong>${s.projects ?? 0}</strong> projets</span>
+      <span class="chip"><strong>${s.workloads}</strong> workloads</span>
+      <span class="chip"><strong>${s.pods_ready}/${s.pods_desired}</strong> pods</span>
+      <span class="chip"><strong>${s.instances_running}/${s.instances}</strong> VM</span>
+      <span class="chip ${on ? "chip-ok" : "chip-off"}"><strong>${on ? "cluster ON" : "cluster OFF"}</strong></span>
+      <span class="chip"><strong>${s.compute_driver}</strong> compute</span>
+    `;
+  }
+
   async function loadStats() {
     try {
       const s = await api("/stats");
       const on = Boolean(s.cluster_mode);
       if (driverHint) driverHint.textContent = s.compute_driver || "sim";
-      statsEl.innerHTML = `
-        <span class="chip"><strong>${s.workloads}</strong> workloads</span>
-        <span class="chip"><strong>${s.pods_ready}/${s.pods_desired}</strong> pods</span>
-        <span class="chip ${on ? "chip-ok" : "chip-off"}"><strong>${on ? "cluster ON" : "cluster OFF"}</strong></span>
-      `;
+      renderOverview(s);
+      if (statsEl) {
+        statsEl.innerHTML = `
+          <span class="chip"><strong>${s.workloads}</strong> workloads</span>
+          <span class="chip"><strong>${s.pods_ready}/${s.pods_desired}</strong> pods</span>
+          <span class="chip ${on ? "chip-ok" : "chip-off"}"><strong>${on ? "cluster ON" : "cluster OFF"}</strong></span>
+        `;
+      }
       if (instanceStats) {
         instanceStats.innerHTML = `
           <span class="chip"><strong>${s.instances_running}/${s.instances}</strong> running</span>
@@ -136,13 +170,25 @@
         `;
       }
     } catch (err) {
-      statsEl.innerHTML = `<span class="chip chip-off">${err.message}</span>`;
+      if (statsEl) statsEl.innerHTML = `<span class="chip chip-off">${err.message}</span>`;
+      if (overviewStats) overviewStats.innerHTML = `<span class="chip chip-off">${err.message}</span>`;
+    }
+  }
+
+  function fillProjectSelect(items) {
+    if (!projectSelect) return;
+    const current = localStorage.getItem(PROJECT_STORAGE) || projectSelect.value || "default";
+    projectSelect.innerHTML = items
+      .map((p) => `<option value="${p.name}">${p.name} · ${p.namespace}</option>`)
+      .join("");
+    if ([...projectSelect.options].some((o) => o.value === current)) {
+      projectSelect.value = current;
     }
   }
 
   function renderRows(items) {
     if (!items.length) {
-      bodyEl.innerHTML = `<tr><td colspan="4" class="empty">Aucun workload. Crée-en un à gauche.</td></tr>`;
+      bodyEl.innerHTML = `<tr><td colspan="4" class="empty">Aucun workload. Crée-en un à gauche ou via Vue d’ensemble.</td></tr>`;
       return;
     }
     bodyEl.innerHTML = items
@@ -152,7 +198,7 @@
         <tr data-name="${w.name}">
           <td>
             <div class="name">${w.name}</div>
-            <div class="image">${w.image}</div>
+            <div class="image">${w.project} · ${w.image}</div>
             ${w.url ? `<div class="image"><a href="${w.url}" target="_blank" rel="noreferrer">${w.url}</a></div>` : ""}
           </td>
           <td><span class="status ${statusClass(status)}">${status}</span></td>
@@ -172,7 +218,7 @@
 
   function renderInstances(items) {
     if (!items.length) {
-      instancesBody.innerHTML = `<tr><td colspan="4" class="empty">Aucune instance. Lance-en une à gauche.</td></tr>`;
+      instancesBody.innerHTML = `<tr><td colspan="4" class="empty">Aucune VM. Lance-en une à gauche.</td></tr>`;
       return;
     }
     instancesBody.innerHTML = items
@@ -182,7 +228,7 @@
         <tr data-name="${i.name}">
           <td>
             <div class="name">${i.name}</div>
-            <div class="image">linux/${i.distro} · ${i.image} · ${i.vcpus} vCPU · ${i.memory_mb} MiB · ${i.driver}</div>
+            <div class="image">${i.project} · linux/${i.distro} · ${i.image} · ${i.vcpus} vCPU · ${i.memory_mb} MiB</div>
           </td>
           <td><span class="status ${statusClass(status)}">${status}</span></td>
           <td class="mono">${i.ipv4 || "—"}</td>
@@ -200,12 +246,9 @@
   }
 
   async function loadProjects() {
-    if (!projectsBody) return;
     const items = await api("/projects");
-    if (!items.length) {
-      projectsBody.innerHTML = `<tr><td colspan="4" class="empty">Aucun projet.</td></tr>`;
-      return;
-    }
+    fillProjectSelect(items);
+    if (!projectsBody) return;
     projectsBody.innerHTML = items
       .map((p) => {
         return `
@@ -218,6 +261,7 @@
           <td class="mono">${p.pods_used}/${p.pods_quota}</td>
           <td>
             <div class="row-actions">
+              <button class="btn btn-ghost btn-sm" data-paction="use" type="button">Utiliser</button>
               ${
                 p.name !== "default"
                   ? `<button class="btn btn-danger btn-sm" data-paction="delete" type="button">Supprimer</button>`
@@ -257,19 +301,24 @@
   }
 
   document.querySelectorAll(".tab").forEach((tab) => {
-    tab.addEventListener("click", () => {
-      const target = tab.dataset.tab;
-      document.querySelectorAll(".tab").forEach((t) => {
-        const on = t.dataset.tab === target;
-        t.classList.toggle("is-active", on);
-        t.setAttribute("aria-selected", on ? "true" : "false");
-      });
-      document.querySelectorAll("[data-panel]").forEach((panel) => {
-        const on = panel.dataset.panel === target;
-        panel.hidden = !on;
-        panel.classList.toggle("is-hidden", !on);
-      });
-    });
+    tab.addEventListener("click", () => switchTab(tab.dataset.tab));
+  });
+
+  document.querySelectorAll("[data-goto]").forEach((btn) => {
+    btn.addEventListener("click", () => switchTab(btn.dataset.goto));
+  });
+
+  projectSelect?.addEventListener("change", () => {
+    localStorage.setItem(PROJECT_STORAGE, projectSelect.value);
+    const remembered = projectKeys[projectSelect.value];
+    if (remembered && apiKeyInput) {
+      apiKeyInput.value = remembered;
+      localStorage.setItem(KEY_STORAGE, remembered);
+    } else if (projectSelect.value === "default" && apiKeyInput) {
+      apiKeyInput.value = "";
+      localStorage.setItem(KEY_STORAGE, "");
+    }
+    refresh().catch((err) => toast(err.message, true));
   });
 
   projectForm?.addEventListener("submit", async (e) => {
@@ -286,12 +335,19 @@
       projectForm.pods_quota.value = "10";
       projectForm.cpu_quota.value = "1";
       projectForm.memory_quota.value = "1Gi";
-      if (created.api_key && apiKeyInput) {
-        apiKeyInput.value = created.api_key;
+      if (created.api_key) {
+        projectKeys[created.name] = created.api_key;
+        if (apiKeyInput) apiKeyInput.value = created.api_key;
         localStorage.setItem(KEY_STORAGE, created.api_key);
+        localStorage.setItem(PROJECT_STORAGE, created.name);
+        openModal(
+          `Projet « ${created.name} » créé`,
+          `Namespace: ${created.namespace}\nAPI key (conservée dans le navigateur):\n\n${created.api_key}\n\nTu peux maintenant créer workloads et VM dans cet onglet.`
+        );
       }
-      toast(`Projet « ${created.name} » · clé API enregistrée · ns ${created.namespace}`);
+      toast(`Projet « ${created.name} » prêt`);
       await refresh();
+      if (projectSelect) projectSelect.value = created.name;
     } catch (err) {
       toast(err.message, true);
     }
@@ -302,7 +358,23 @@
     if (!btn) return;
     const row = btn.closest("tr[data-name]");
     const name = row?.dataset.name;
-    if (!name || name === "default") return;
+    if (!name) return;
+    if (btn.dataset.paction === "use") {
+      if (projectSelect) projectSelect.value = name;
+      localStorage.setItem(PROJECT_STORAGE, name);
+      const remembered = projectKeys[name];
+      if (remembered && apiKeyInput) {
+        apiKeyInput.value = remembered;
+        localStorage.setItem(KEY_STORAGE, remembered);
+      } else if (name === "default" && apiKeyInput) {
+        apiKeyInput.value = "";
+        localStorage.setItem(KEY_STORAGE, "");
+      }
+      toast(`Projet actif : ${name}`);
+      await refresh().catch((err) => toast(err.message, true));
+      return;
+    }
+    if (name === "default") return;
     if (!window.confirm(`Supprimer le projet « ${name} » et ses ressources ?`)) return;
     try {
       await api(`/projects/${encodeURIComponent(name)}`, { method: "DELETE" });
@@ -313,7 +385,7 @@
     }
   });
 
-  form.addEventListener("submit", async (e) => {
+  form?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const payload = {
       name: form.name.value.trim(),
@@ -325,18 +397,18 @@
     try {
       const created = await api("/workloads", { method: "POST", body: JSON.stringify(payload) });
       form.reset();
+      form.image.value = "nginxinc/nginx-unprivileged:1.27-alpine";
       form.port.value = "8080";
       form.replicas.value = "1";
       form.apply.checked = true;
-      const suffix = payload.apply ? ` · ${created.status}` : "";
-      toast(`Workload « ${payload.name} » créé${suffix}`);
+      toast(`Workload « ${payload.name} » · ${created.status}${created.url ? " · " + created.url : ""}`);
       await refresh();
     } catch (err) {
       toast(err.message, true);
     }
   });
 
-  instanceForm.addEventListener("submit", async (e) => {
+  instanceForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const payload = {
       name: instanceForm.name.value.trim(),
@@ -351,14 +423,56 @@
       instanceForm.image.value = "ubuntu-22.04";
       instanceForm.vcpus.value = "1";
       instanceForm.memory_mb.value = "1024";
-      toast(`VM Linux « ${created.name} » · ${created.os}/${created.distro} · ${created.status}`);
+      toast(`VM Linux « ${created.name} » · ${created.status}`);
       await refresh();
     } catch (err) {
       toast(err.message, true);
     }
   });
 
-  bodyEl.addEventListener("click", async (e) => {
+  presetWeb?.addEventListener("click", async () => {
+    const name = `web-${Date.now().toString(36).slice(-4)}`;
+    try {
+      const created = await api("/workloads", {
+        method: "POST",
+        body: JSON.stringify({
+          name,
+          image: "nginxinc/nginx-unprivileged:1.27-alpine",
+          port: 8080,
+          replicas: 1,
+          apply: true,
+        }),
+      });
+      toast(`Déployé « ${name} » · ${created.status}`);
+      switchTab("workloads");
+      await refresh();
+    } catch (err) {
+      toast(err.message, true);
+    }
+  });
+
+  presetVm?.addEventListener("click", async () => {
+    const name = `vm-${Date.now().toString(36).slice(-4)}`;
+    try {
+      const created = await api("/instances", {
+        method: "POST",
+        body: JSON.stringify({
+          name,
+          image: "ubuntu-22.04",
+          vcpus: 1,
+          memory_mb: 1024,
+          launch: true,
+        }),
+      });
+      toast(`VM « ${name} » · ${created.status}`);
+      switchTab("instances");
+      await refresh();
+    } catch (err) {
+      toast(err.message, true);
+    }
+  });
+
+  bodyEl?.addEventListener("click", async (e) => {
     const btn = e.target.closest("button[data-action]");
     if (!btn) return;
     const row = btn.closest("tr[data-name]");
@@ -390,7 +504,7 @@
     }
   });
 
-  instancesBody.addEventListener("click", async (e) => {
+  instancesBody?.addEventListener("click", async (e) => {
     const btn = e.target.closest("button[data-iaction]");
     if (!btn) return;
     const row = btn.closest("tr[data-name]");
@@ -428,15 +542,15 @@
   }
   saveKeyBtn?.addEventListener("click", () => {
     localStorage.setItem(KEY_STORAGE, getApiKey());
-    toast("API key enregistrée dans ce navigateur");
+    toast("Clé enregistrée — ressources du projet chargées");
     refresh().catch((err) => toast(err.message, true));
   });
 
-  refreshBtn.addEventListener("click", () => refresh().catch((err) => toast(err.message, true)));
-  irefreshBtn.addEventListener("click", () => refresh().catch((err) => toast(err.message, true)));
+  refreshBtn?.addEventListener("click", () => refresh().catch((err) => toast(err.message, true)));
+  irefreshBtn?.addEventListener("click", () => refresh().catch((err) => toast(err.message, true)));
   prefreshBtn?.addEventListener("click", () => refresh().catch((err) => toast(err.message, true)));
-  modalClose.addEventListener("click", closeModal);
-  modal.addEventListener("click", (e) => {
+  modalClose?.addEventListener("click", closeModal);
+  modal?.addEventListener("click", (e) => {
     if (e.target === modal) closeModal();
   });
   document.addEventListener("keydown", (e) => {
@@ -446,7 +560,7 @@
   refresh()
     .then(startPolling)
     .catch((err) => {
-      bodyEl.innerHTML = `<tr><td colspan="4" class="empty">${err.message}</td></tr>`;
+      if (bodyEl) bodyEl.innerHTML = `<tr><td colspan="4" class="empty">${err.message}</td></tr>`;
       toast(err.message, true);
       startPolling();
     });

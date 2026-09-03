@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Console — OpenYard</title>
+    <title>Cloud Console — OpenYard</title>
     <meta
       name="description"
-      content="Console OpenYard : workloads Kubernetes et instances Compute (VM)."
+      content="Portail OpenYard : crée projets, workloads Kubernetes et VM Linux depuis le navigateur."
     />
     <link rel="stylesheet" href="/assets/css/site.css" />
   </head>
@@ -20,31 +20,53 @@
         <nav class="nav" aria-label="Navigation">
           <a href="/">Accueil</a>
           <a href="/docs">API</a>
-          <a href="/console" aria-current="page">Console</a>
+          <a href="/console" aria-current="page">Cloud Console</a>
         </nav>
       </div>
     </header>
 
-    <div class="shell" style="padding-top: 1.25rem">
-      <div class="auth-bar">
+    <div class="shell console-hero">
+      <div>
+        <p class="kicker">Self-service · multi-tenant</p>
+        <h1 class="console-title">Cloud Console</h1>
+        <p class="console-lead">
+          Crée un projet, déploie des containers sur Kubernetes, lance des VM Linux — tout depuis
+          cette page.
+        </p>
+      </div>
+      <div class="context-card">
+        <label>
+          Projet actif
+          <select id="project-select" aria-label="Projet actif">
+            <option value="default">default</option>
+          </select>
+        </label>
         <label class="auth-key">
-          API key
+          API key du projet
           <input
             id="api-key"
             type="password"
             autocomplete="off"
-            placeholder="requis si OPENYARD_API_KEY est défini"
+            placeholder="oy_… (vide = default anonyme)"
           />
         </label>
-        <button class="btn btn-ghost btn-sm" type="button" id="save-key-btn">Enregistrer</button>
-        <span class="chip" id="auth-chip">auth…</span>
-        <span class="chip" id="poll-chip">live off</span>
+        <div class="context-actions">
+          <button class="btn btn-ghost btn-sm" type="button" id="save-key-btn">Utiliser cette clé</button>
+          <span class="chip" id="auth-chip">auth…</span>
+          <span class="chip" id="poll-chip">live off</span>
+        </div>
       </div>
+    </div>
+
+    <div class="shell">
       <div class="tabs" role="tablist" aria-label="Ressources">
+        <button class="tab is-active" type="button" data-tab="overview" role="tab" aria-selected="true">
+          Vue d’ensemble
+        </button>
         <button class="tab" type="button" data-tab="projects" role="tab" aria-selected="false">
           Projets
         </button>
-        <button class="tab is-active" type="button" data-tab="workloads" role="tab" aria-selected="true">
+        <button class="tab" type="button" data-tab="workloads" role="tab" aria-selected="false">
           Workloads
         </button>
         <button class="tab" type="button" data-tab="instances" role="tab" aria-selected="false">
@@ -53,10 +75,44 @@
       </div>
     </div>
 
+    <!-- Overview -->
+    <div class="shell overview-panel" data-panel="overview">
+      <div class="stats-row overview-stats" id="overview-stats" aria-live="polite">
+        <span class="chip">chargement…</span>
+      </div>
+      <div class="quick-grid">
+        <button class="quick-card" type="button" data-goto="projects">
+          <span class="quick-label">1 · Projet</span>
+          <strong>Créer un tenant</strong>
+          <p>Namespace, quotas, clé API</p>
+        </button>
+        <button class="quick-card" type="button" data-goto="workloads">
+          <span class="quick-label">2 · Workload</span>
+          <strong>Déployer un container</strong>
+          <p>Image Docker → pods + Ingress</p>
+        </button>
+        <button class="quick-card" type="button" data-goto="instances">
+          <span class="quick-label">3 · Compute</span>
+          <strong>Lancer une VM Linux</strong>
+          <p>Ubuntu 22.04 / 24.04</p>
+        </button>
+      </div>
+      <div class="preset-bar">
+        <p>Raccourci démo (projet actif) :</p>
+        <button class="btn btn-solid" type="button" id="preset-web">
+          Déployer nginx (apply)
+        </button>
+        <button class="btn btn-ghost" type="button" id="preset-vm">
+          Lancer Ubuntu 22.04
+        </button>
+      </div>
+    </div>
+
+    <!-- Projects -->
     <div class="shell console-layout is-hidden" data-panel="projects" hidden>
       <aside class="side-panel">
         <h2>Nouveau projet</h2>
-        <p>Namespace K8s <code class="mono">oy-nom</code>, quotas pods/CPU/RAM, clé API dédiée.</p>
+        <p>Crée un tenant isolé : namespace <code class="mono">oy-nom</code>, quotas, clé API.</p>
         <form id="project-form" class="form-grid" autocomplete="off">
           <label>
             Nom
@@ -79,7 +135,7 @@
       </aside>
       <section class="main-panel" aria-labelledby="projects-title">
         <div class="toolbar">
-          <h2 id="projects-title">Projets (tenants)</h2>
+          <h2 id="projects-title">Tous les projets</h2>
           <button class="btn btn-ghost btn-sm" type="button" id="prefresh-btn">Rafraîchir</button>
         </div>
         <div class="table-wrap">
@@ -93,19 +149,18 @@
               </tr>
             </thead>
             <tbody id="projects-body">
-              <tr>
-                <td colspan="4" class="empty">Chargement…</td>
-              </tr>
+              <tr><td colspan="4" class="empty">Chargement…</td></tr>
             </tbody>
           </table>
         </div>
       </section>
     </div>
 
-    <div class="shell console-layout" data-panel="workloads">
+    <!-- Workloads -->
+    <div class="shell console-layout is-hidden" data-panel="workloads" hidden>
       <aside class="side-panel">
         <h2>Nouveau workload</h2>
-        <p>Image Docker → pods Kubernetes. Coche Apply pour déployer tout de suite.</p>
+        <p>Image Docker → Deployment + Service + Ingress sur le projet actif.</p>
         <form id="create-form" class="form-grid" autocomplete="off">
           <label>
             Nom
@@ -113,7 +168,7 @@
           </label>
           <label>
             Image Docker
-            <input id="image" name="image" type="text" required placeholder="nginxinc/nginx-unprivileged:1.27" />
+            <input id="image" name="image" type="text" required value="nginxinc/nginx-unprivileged:1.27-alpine" />
           </label>
           <label>
             Port conteneur
@@ -125,17 +180,16 @@
           </label>
           <label class="check">
             <input id="apply" name="apply" type="checkbox" checked />
-            Appliquer sur le cluster (Apply)
+            Appliquer sur le cluster maintenant
           </label>
-          <button class="btn btn-solid" type="submit">Créer</button>
+          <button class="btn btn-solid" type="submit">Créer le workload</button>
         </form>
       </aside>
-
       <section class="main-panel" aria-labelledby="workloads-title">
         <div class="toolbar">
           <h2 id="workloads-title">Workloads</h2>
           <div class="stats-row" id="stats" aria-live="polite">
-            <span class="chip">chargement…</span>
+            <span class="chip">—</span>
           </div>
           <button class="btn btn-ghost btn-sm" type="button" id="refresh-btn">Rafraîchir</button>
         </div>
@@ -150,21 +204,20 @@
               </tr>
             </thead>
             <tbody id="workloads-body">
-              <tr>
-                <td colspan="4" class="empty">Chargement…</td>
-              </tr>
+              <tr><td colspan="4" class="empty">Chargement…</td></tr>
             </tbody>
           </table>
         </div>
       </section>
     </div>
 
+    <!-- VMs -->
     <div class="shell console-layout is-hidden" data-panel="instances" hidden>
       <aside class="side-panel">
         <h2>Nouvelle VM Linux</h2>
         <p>
-          Ubuntu via driver <code class="mono" id="driver-hint">sim</code>. Pour de vraies VM :
-          <code class="mono">brew install --cask multipass</code>
+          Ubuntu via driver <code class="mono" id="driver-hint">sim</code>. Multipass pour de
+          vraies micro-VM.
         </p>
         <form id="instance-form" class="form-grid" autocomplete="off">
           <label>
@@ -190,7 +243,6 @@
           <button class="btn btn-solid" type="submit">Lancer la VM</button>
         </form>
       </aside>
-
       <section class="main-panel" aria-labelledby="instances-title">
         <div class="toolbar">
           <h2 id="instances-title">VM Linux</h2>
@@ -210,9 +262,7 @@
               </tr>
             </thead>
             <tbody id="instances-body">
-              <tr>
-                <td colspan="4" class="empty">Aucune instance.</td>
-              </tr>
+              <tr><td colspan="4" class="empty">Aucune instance.</td></tr>
             </tbody>
           </table>
         </div>
