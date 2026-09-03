@@ -6,7 +6,7 @@
 **Open cloud** open source : site web + console + API.
 
 - **Workloads** : image Docker → Deployment Kubernetes → pods
-- **Compute** : instances / VM (driver `sim` ou **Multipass**)
+- **VM Linux** : Ubuntu 22.04 / 24.04 (driver `sim` ou **Multipass**)
 
 Plan de contrôle, démos, RBAC et quotas tournent sur **kind** — sans facture cloud.
 
@@ -15,16 +15,16 @@ Plan de contrôle, démos, RBAC et quotas tournent sur **kind** — sans facture
 Un cloud managé cache le passage conteneur → orchestration (et IaaS). OpenYard
 les rend lisibles :
 
-1. Console `/console` : onglet Workloads ou Instances (VM)
+1. Console `/console` : onglet Workloads ou **VM Linux**
 2. Workloads : manifest Deployment + Service, apply cluster, statut pods
-3. Instances : launch / start / stop / delete (sim ou Multipass)
+3. VM Linux Ubuntu : launch / start / stop / delete (sim ou Multipass)
 
 ## Site & console
 
 | URL | Contenu |
 | --- | --- |
 | `/` | Landing OpenYard |
-| `/console` | Workloads + Instances (VM) |
+| `/console` | Workloads + VM Linux (Ubuntu) |
 | `/docs` | OpenAPI |
 | `/assets/*` | CSS / JS |
 
@@ -45,24 +45,28 @@ Le dossier `web/` est embarqué dans l’image Docker : sur kind,
 | GET | `/workloads/{name}/status` | Statut pods (readyReplicas) |
 | GET | `/workloads/{name}/manifest` | YAML Deployment + Service |
 | DELETE | `/workloads/{name}` | Retirer (et supprimer du cluster si appliqué) |
-| POST | `/instances` | Créer / lancer une VM |
+| GET | `/compute/images` | Catalogue VM Linux (Ubuntu) |
+| POST | `/instances` | Lancer une VM Linux |
 | GET | `/instances` | Lister |
 | GET | `/instances/{name}/status` | Rafraîchir le statut |
 | POST | `/instances/{name}/stop` | Arrêter |
 | POST | `/instances/{name}/start` | Démarrer |
 | DELETE | `/instances/{name}` | Supprimer |
 
+Images acceptées : `ubuntu-22.04`, `ubuntu-24.04`, `ubuntu-lts` (Linux uniquement).
+
 ### Compute drivers
 
 | `OPENYARD_COMPUTE` | Comportement |
 | --- | --- |
 | `auto` (défaut) | Multipass si installé, sinon `sim` |
-| `sim` | Cycle de vie VM simulé (IP `10.88.0.x`) |
-| `multipass` | Vraies micro-VM via [Multipass](https://canonical.com/multipass) |
+| `sim` | VM Linux Ubuntu simulées (IP `10.88.0.x`) |
+| `multipass` | Vraies VM Ubuntu via [Multipass](https://canonical.com/multipass) |
 | `off` | Compute désactivé |
 
 ```bash
-# Vraies VM (installe Multipass puis) :
+# Vraies VM Linux (mot de passe admin Homebrew) :
+brew install --cask multipass
 OPENYARD_COMPUTE=multipass make run
 ```
 

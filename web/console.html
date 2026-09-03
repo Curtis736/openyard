@@ -31,7 +31,7 @@
           Workloads
         </button>
         <button class="tab" type="button" data-tab="instances" role="tab" aria-selected="false">
-          Instances (VM)
+          VM Linux
         </button>
       </div>
     </div>
@@ -91,10 +91,10 @@
 
     <div class="shell console-layout is-hidden" data-panel="instances" hidden>
       <aside class="side-panel">
-        <h2>Nouvelle instance</h2>
+        <h2>Nouvelle VM Linux</h2>
         <p>
-          VM Compute : driver <code class="mono" id="driver-hint">sim</code> (ou Multipass si
-          installé).
+          Ubuntu via driver <code class="mono" id="driver-hint">sim</code>. Pour de vraies VM :
+          <code class="mono">brew install --cask multipass</code>
         </p>
         <form id="instance-form" class="form-grid" autocomplete="off">
           <label>
@@ -102,8 +102,12 @@
             <input id="iname" name="name" type="text" required pattern="[a-z0-9]([-a-z0-9]*[a-z0-9])?" maxlength="63" placeholder="web-01" />
           </label>
           <label>
-            Image / release
-            <input id="iimage" name="image" type="text" required value="22.04" placeholder="22.04" />
+            Distribution Linux
+            <select id="iimage" name="image" required>
+              <option value="ubuntu-22.04">Ubuntu 22.04 LTS</option>
+              <option value="ubuntu-24.04">Ubuntu 24.04 LTS</option>
+              <option value="ubuntu-lts">Ubuntu LTS (courante)</option>
+            </select>
           </label>
           <label>
             vCPU
@@ -113,13 +117,13 @@
             Mémoire (MiB)
             <input id="memory_mb" name="memory_mb" type="number" min="256" max="8192" step="256" value="1024" required />
           </label>
-          <button class="btn btn-solid" type="submit">Lancer</button>
+          <button class="btn btn-solid" type="submit">Lancer la VM</button>
         </form>
       </aside>
 
       <section class="main-panel" aria-labelledby="instances-title">
         <div class="toolbar">
-          <h2 id="instances-title">Instances</h2>
+          <h2 id="instances-title">VM Linux</h2>
           <div class="stats-row" id="instance-stats" aria-live="polite">
             <span class="chip">—</span>
           </div>

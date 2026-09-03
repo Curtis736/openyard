@@ -27,7 +27,15 @@ from app.compute import (
     stop_instance,
 )
 from app.manifests import render_bundle
-from app.models import Instance, InstanceCreate, Workload, WorkloadCreate, WorkloadStats
+from app.models import (
+    Instance,
+    InstanceCreate,
+    LinuxImageInfo,
+    Workload,
+    WorkloadCreate,
+    WorkloadStats,
+    catalog_payload,
+)
 from app.store import WorkloadStore
 
 store = WorkloadStore(namespace=os.getenv("OPENYARD_NAMESPACE", "openyard"))
@@ -38,7 +46,7 @@ app = FastAPI(
     version=__version__,
     description=(
         "Open cloud open source : site + console + API. Workloads Docker → pods "
-        "Kubernetes, et instances Compute (VM simulées ou Multipass)."
+        "Kubernetes, et VM Linux Ubuntu (sim ou Multipass)."
     ),
 )
 
@@ -226,6 +234,11 @@ def workload_manifest(name: str) -> PlainTextResponse:
     if workload is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workload introuvable")
     return PlainTextResponse(render_bundle(workload), media_type="application/yaml")
+
+
+@app.get("/compute/images", response_model=list[LinuxImageInfo], tags=["compute"])
+def linux_images_catalog() -> list[LinuxImageInfo]:
+    return catalog_payload()
 
 
 @app.post(

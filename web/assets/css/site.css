@@ -421,7 +421,8 @@ label {
 }
 
 input[type="text"],
-input[type="number"] {
+input[type="number"],
+select {
   width: 100%;
   min-height: 2.4rem;
   padding: 0.45rem 0.7rem;

@@ -71,14 +71,20 @@ class WorkloadStore:
         with self._lock:
             if payload.name in self._instances:
                 raise KeyError(payload.name)
+            from app.linux_images import resolve_linux_image
+
+            meta = resolve_linux_image(payload.image)
             instance = Instance(
                 name=payload.name,
-                image=payload.image,
+                image=meta["id"],
+                os="linux",
+                distro=meta["distro"],
                 vcpus=payload.vcpus,
                 memory_mb=payload.memory_mb,
                 created_at=datetime.now(UTC),
                 status="pending",
                 driver=driver,
+                message=f"VM Linux {meta['name']}",
             )
             self._instances[payload.name] = instance
             return instance

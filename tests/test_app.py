@@ -161,7 +161,7 @@ def test_landing_and_console() -> None:
     console = client.get("/console")
     assert console.status_code == 200
     assert b"Nouveau workload" in console.content
-    assert b"Instances" in console.content
+    assert b"VM Linux" in console.content
     assert b"/assets/js/console.js" in console.content
 
     css = client.get("/assets/css/site.css")
@@ -174,18 +174,40 @@ def test_landing_and_console() -> None:
     assert b"/instances" in js.content
 
 
+def test_linux_images_catalog() -> None:
+    response = client.get("/compute/images")
+    assert response.status_code == 200
+    ids = {item["id"] for item in response.json()}
+    assert "ubuntu-22.04" in ids
+    assert "ubuntu-24.04" in ids
+    assert all(item["distro"] == "ubuntu" for item in response.json())
+
+
+def test_rejects_non_linux_image(monkeypatch) -> None:
+    monkeypatch.setenv("OPENYARD_COMPUTE", "sim")
+    response = client.post(
+        "/instances",
+        json={"name": "win-01", "image": "windows-11", "vcpus": 2, "memory_mb": 2048},
+    )
+    assert response.status_code == 422
+
+
 def test_instances_lifecycle_sim(monkeypatch) -> None:
     monkeypatch.setenv("OPENYARD_COMPUTE", "sim")
     created = client.post(
         "/instances",
-        json={"name": "web-01", "image": "22.04", "vcpus": 1, "memory_mb": 1024},
+        json={"name": "web-01", "image": "ubuntu-22.04", "vcpus": 1, "memory_mb": 1024},
     )
     assert created.status_code == 201
     body = created.json()
     assert body["name"] == "web-01"
+    assert body["os"] == "linux"
+    assert body["distro"] == "ubuntu"
+    assert body["image"] == "ubuntu-22.04"
     assert body["status"] == "running"
     assert body["ipv4"].startswith("10.88.0.")
     assert body["driver"] == "sim"
+    assert "Linux" in body["message"]
 
     listed = client.get("/instances")
     assert any(item["name"] == "web-01" for item in listed.json())

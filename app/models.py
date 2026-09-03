@@ -4,6 +4,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.linux_images import list_linux_images, resolve_linux_image
+
 
 class WorkloadCreate(BaseModel):
     name: str = Field(min_length=1, max_length=63, pattern=r"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$")
@@ -49,23 +51,22 @@ class WorkloadStats(BaseModel):
 
 class InstanceCreate(BaseModel):
     name: str = Field(min_length=1, max_length=63, pattern=r"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$")
-    image: str = Field(default="22.04", min_length=1, max_length=64)
+    image: str = Field(default="ubuntu-22.04", min_length=1, max_length=64)
     vcpus: int = Field(default=1, ge=1, le=4)
     memory_mb: int = Field(default=1024, ge=256, le=8192)
     launch: bool = True
 
     @field_validator("image")
     @classmethod
-    def image_ok(cls, value: str) -> str:
-        cleaned = value.strip()
-        if not cleaned or " " in cleaned:
-            raise ValueError("image / release invalide")
-        return cleaned
+    def linux_image_only(cls, value: str) -> str:
+        return resolve_linux_image(value)["id"]
 
 
 class Instance(BaseModel):
     name: str
     image: str
+    os: str = "linux"
+    distro: str = "ubuntu"
     vcpus: int
     memory_mb: int
     created_at: datetime
@@ -73,3 +74,20 @@ class Instance(BaseModel):
     ipv4: str = ""
     driver: str = "sim"
     message: str = ""
+
+
+class LinuxImageInfo(BaseModel):
+    id: str
+    name: str
+    distro: str
+    release: str
+    description: str
+
+
+def catalog_payload() -> list[LinuxImageInfo]:
+    return [
+        LinuxImageInfo(
+            **{k: img[k] for k in ("id", "name", "distro", "release", "description")}
+        )
+        for img in list_linux_images()
+    ]

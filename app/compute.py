@@ -7,13 +7,14 @@ import subprocess
 from dataclasses import dataclass
 from threading import Lock
 
+from app.linux_images import multipass_alias, resolve_linux_image
 from app.models import Instance, InstanceCreate
 
 logger = logging.getLogger("openyard.compute")
 
 
 class ComputeError(RuntimeError):
-    """Échec d’une opération compute (VM / instance)."""
+    """Échec d’une opération compute (VM Linux)."""
 
 
 @dataclass(frozen=True)
@@ -31,7 +32,6 @@ def compute_driver_name() -> str:
         return "multipass"
     if raw in {"sim", "simulate", "mock"}:
         return "sim"
-    # auto : multipass si dispo, sinon simulation
     if shutil.which("multipass"):
         return "multipass"
     return "sim"
@@ -42,7 +42,7 @@ def compute_enabled() -> bool:
 
 
 class _SimDriver:
-    """Cycle de vie VM simulé — idéal pour CI et démo sans hyperviseur."""
+    """VM Linux simulées (Ubuntu) — CI / démo sans hyperviseur."""
 
     def __init__(self) -> None:
         self._state: dict[str, InstanceRuntime] = {}
@@ -50,12 +50,16 @@ class _SimDriver:
         self._ip_seq = 10
 
     def launch(self, payload: InstanceCreate) -> InstanceRuntime:
+        meta = resolve_linux_image(payload.image)
         with self._lock:
             self._ip_seq += 1
             runtime = InstanceRuntime(
                 status="running",
                 ipv4=f"10.88.0.{self._ip_seq}",
-                message=f"sim · {payload.image} · {payload.vcpus} vCPU · {payload.memory_mb} MiB",
+                message=(
+                    f"VM Linux simulée · {meta['name']} · "
+                    f"{payload.vcpus} vCPU · {payload.memory_mb} MiB"
+                ),
             )
             self._state[payload.name] = runtime
             return runtime
@@ -64,15 +68,19 @@ class _SimDriver:
         with self._lock:
             return self._state.get(
                 name,
-                InstanceRuntime(status="unknown", message="instance inconnue du driver sim"),
+                InstanceRuntime(status="unknown", message="VM Linux inconnue (sim)"),
             )
 
     def stop(self, name: str) -> InstanceRuntime:
         with self._lock:
             current = self._state.get(name)
             if current is None:
-                raise ComputeError(f"instance introuvable : {name}")
-            runtime = InstanceRuntime(status="stopped", ipv4=current.ipv4, message="arrêtée (sim)")
+                raise ComputeError(f"VM Linux introuvable : {name}")
+            runtime = InstanceRuntime(
+                status="stopped",
+                ipv4=current.ipv4,
+                message="VM Linux arrêtée (sim)",
+            )
             self._state[name] = runtime
             return runtime
 
@@ -80,8 +88,12 @@ class _SimDriver:
         with self._lock:
             current = self._state.get(name)
             if current is None:
-                raise ComputeError(f"instance introuvable : {name}")
-            runtime = InstanceRuntime(status="running", ipv4=current.ipv4, message="démarrée (sim)")
+                raise ComputeError(f"VM Linux introuvable : {name}")
+            runtime = InstanceRuntime(
+                status="running",
+                ipv4=current.ipv4,
+                message="VM Linux démarrée (sim)",
+            )
             self._state[name] = runtime
             return runtime
 
@@ -91,16 +103,20 @@ class _SimDriver:
 
 
 class _MultipassDriver:
-    """Vraies micro-VM via Canonical Multipass (`multipass launch`)."""
+    """Vraies VM Linux Ubuntu via Canonical Multipass."""
 
     def launch(self, payload: InstanceCreate) -> InstanceRuntime:
         if not shutil.which("multipass"):
-            raise ComputeError("multipass n’est pas installé sur cet hôte")
+            raise ComputeError(
+                "multipass n’est pas installé — brew install --cask multipass "
+                "(mot de passe admin requis)"
+            )
+        alias = multipass_alias(payload.image)
         mem = f"{payload.memory_mb}M"
         cmd = [
             "multipass",
             "launch",
-            payload.image,
+            alias,
             "--name",
             payload.name,
             "--cpus",
@@ -115,7 +131,13 @@ class _MultipassDriver:
             raise ComputeError(f"multipass launch échoué : {err}") from exc
         except subprocess.TimeoutExpired as exc:
             raise ComputeError("multipass launch timeout") from exc
-        return self.status(payload.name)
+        runtime = self.status(payload.name)
+        meta = resolve_linux_image(payload.image)
+        return InstanceRuntime(
+            status=runtime.status,
+            ipv4=runtime.ipv4,
+            message=f"VM Linux Multipass · {meta['name']} · {runtime.message}",
+        )
 
     def status(self, name: str) -> InstanceRuntime:
         try:

@@ -140,7 +140,7 @@
         <tr data-name="${i.name}">
           <td>
             <div class="name">${i.name}</div>
-            <div class="image">${i.image} · ${i.vcpus} vCPU · ${i.memory_mb} MiB · ${i.driver}</div>
+            <div class="image">linux/${i.distro} · ${i.image} · ${i.vcpus} vCPU · ${i.memory_mb} MiB · ${i.driver}</div>
           </td>
           <td><span class="status ${statusClass(status)}">${status}</span></td>
           <td class="mono">${i.ipv4 || "—"}</td>
@@ -219,10 +219,10 @@
     try {
       const created = await api("/instances", { method: "POST", body: JSON.stringify(payload) });
       instanceForm.reset();
-      instanceForm.image.value = "22.04";
+      instanceForm.image.value = "ubuntu-22.04";
       instanceForm.vcpus.value = "1";
       instanceForm.memory_mb.value = "1024";
-      toast(`Instance « ${created.name} » · ${created.status}`);
+      toast(`VM Linux « ${created.name} » · ${created.os}/${created.distro} · ${created.status}`);
       await refresh();
     } catch (err) {
       toast(err.message, true);
