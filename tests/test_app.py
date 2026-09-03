@@ -12,9 +12,12 @@ client = TestClient(app)
 
 def setup_function() -> None:
     for item in list(store.list()):
-        store.delete(item.name)
+        store.delete(item.name, project=item.project)
     for item in list(store.list_instances()):
-        store.delete_instance(item.name)
+        store.delete_instance(item.name, project=item.project)
+    for project in list(store.list_projects()):
+        if project.name != "default":
+            store.delete_project(project.name)
 
 
 def test_health() -> None:
@@ -24,10 +27,84 @@ def test_health() -> None:
     assert body["status"] == "ok"
     assert "cluster" in body
     assert "auth_required" in body
-    assert body["auth_required"] is False
+    assert body["projects"] >= 1
 
 
-def test_api_key_protects_workloads(monkeypatch) -> None:
+def test_projects_multi_tenant() -> None:
+    created = client.post(
+        "/projects",
+        json={"name": "acme", "pods_quota": 5, "cpu_quota": "1", "memory_quota": "512Mi"},
+    )
+    assert created.status_code == 201
+    body = created.json()
+    assert body["name"] == "acme"
+    assert body["namespace"] == "oy-acme"
+    assert body["api_key"].startswith("oy_")
+    key = body["api_key"]
+
+    listed = client.get("/projects")
+    assert listed.status_code == 200
+    names = {item["name"] for item in listed.json()}
+    assert "default" in names and "acme" in names
+    acme_public = next(item for item in listed.json() if item["name"] == "acme")
+    assert acme_public["api_key_set"] is True
+    assert "api_key" not in acme_public
+
+    wl = client.post(
+        "/workloads",
+        headers={"X-API-Key": key},
+        json={
+            "name": "api",
+            "image": "nginxinc/nginx-unprivileged:1.27-alpine",
+            "replicas": 2,
+            "port": 8080,
+        },
+    )
+    assert wl.status_code == 201
+    assert wl.json()["project"] == "acme"
+    assert wl.json()["namespace"] == "oy-acme"
+
+    scoped = client.get("/workloads", headers={"X-API-Key": key})
+    assert len(scoped.json()) == 1
+
+    # anonyme (default) ne voit pas acme
+    other = client.get("/workloads")
+    assert other.status_code == 200
+    assert all(item["project"] == "default" for item in other.json())
+
+
+def test_quota_pods() -> None:
+    created = client.post(
+        "/projects",
+        json={"name": "tiny", "pods_quota": 2},
+    )
+    key = created.json()["api_key"]
+    ok = client.post(
+        "/workloads",
+        headers={"X-API-Key": key},
+        json={
+            "name": "a",
+            "image": "nginxinc/nginx-unprivileged:1.27-alpine",
+            "replicas": 2,
+            "port": 8080,
+        },
+    )
+    assert ok.status_code == 201
+    denied = client.post(
+        "/workloads",
+        headers={"X-API-Key": key},
+        json={
+            "name": "b",
+            "image": "nginxinc/nginx-unprivileged:1.27-alpine",
+            "replicas": 1,
+            "port": 8080,
+        },
+    )
+    assert denied.status_code == 409
+    assert "quota" in denied.json()["detail"]
+
+
+def test_api_key_admin(monkeypatch) -> None:
     monkeypatch.setenv("OPENYARD_API_KEY", "test-secret-key")
     denied = client.get("/workloads")
     assert denied.status_code == 401
@@ -38,9 +115,6 @@ def test_api_key_protects_workloads(monkeypatch) -> None:
     public = client.get("/health")
     assert public.status_code == 200
     assert public.json()["auth_required"] is True
-
-    landing = client.get("/")
-    assert landing.status_code == 200
 
 
 def test_create_list_manifest_and_delete() -> None:
@@ -56,6 +130,7 @@ def test_create_list_manifest_and_delete() -> None:
     assert created.status_code == 201
     body = created.json()
     assert body["name"] == "edge-api"
+    assert body["project"] == "default"
     assert body["replicas"] == 2
     assert body["status"] == "registered"
 
@@ -67,6 +142,7 @@ def test_create_list_manifest_and_delete() -> None:
     assert stats.status_code == 200
     assert stats.json()["workloads"] >= 1
     assert stats.json()["pods_desired"] >= 2
+    assert stats.json()["projects"] >= 1
 
     manifest = client.get("/workloads/edge-api/manifest")
     assert manifest.status_code == 200
@@ -104,6 +180,7 @@ def test_metrics() -> None:
     assert response.status_code == 200
     assert "openyard_up 1" in response.text
     assert "openyard_pods_ready" in response.text
+    assert "openyard_projects" in response.text
 
 
 def test_apply_updates_status() -> None:
@@ -182,11 +259,13 @@ def test_sqlite_persists_across_store_instances(tmp_path) -> None:
 
     db = tmp_path / "persist.db"
     first = WorkloadStore(namespace="openyard", db_path=db)
+    project = first.ensure_default_project()
     first.create(
-        WorkloadCreate(name="kept", image="nginxinc/nginx-unprivileged:1.27-alpine", port=8080)
+        WorkloadCreate(name="kept", image="nginxinc/nginx-unprivileged:1.27-alpine", port=8080),
+        project=project,
     )
     second = WorkloadStore(namespace="openyard", db_path=db)
-    got = second.get("kept")
+    got = second.get("kept", project="default")
     assert got is not None
     assert got.name == "kept"
     assert got.image.endswith("nginx-unprivileged:1.27-alpine")
@@ -203,6 +282,7 @@ def test_landing_and_console() -> None:
     assert console.status_code == 200
     assert b"Appliquer sur le cluster" in console.content
     assert b"api-key" in console.content
+    assert b"Projets" in console.content
     assert b"/assets/js/console.js" in console.content
 
     css = client.get("/assets/css/site.css")
@@ -212,7 +292,7 @@ def test_landing_and_console() -> None:
     js = client.get("/assets/js/console.js")
     assert js.status_code == 200
     assert b"/workloads" in js.content
-    assert b"/instances" in js.content
+    assert b"/projects" in js.content
 
 
 def test_linux_images_catalog() -> None:
@@ -245,6 +325,7 @@ def test_instances_lifecycle_sim(monkeypatch) -> None:
     assert body["os"] == "linux"
     assert body["distro"] == "ubuntu"
     assert body["image"] == "ubuntu-22.04"
+    assert body["project"] == "default"
     assert body["status"] == "running"
     assert body["ipv4"].startswith("10.88.0.")
     assert body["driver"] == "sim"

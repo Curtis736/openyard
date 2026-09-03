@@ -6,6 +6,7 @@
 **Open cloud** open source : site web + console + API.
 
 - **Workloads** : image Docker → Deployment + Service + Ingress → pods
+- **Projets (tenants)** : namespace `oy-*`, quotas pods/CPU/RAM, clé API
 - **VM Linux** : Ubuntu 22.04 / 24.04 (driver `sim` ou **Multipass**)
 - **Persistance** : SQLite (`OPENYARD_DB`)
 - **CI** : lint, tests, kubeconform, Trivy, **e2e kind**
@@ -17,22 +18,32 @@ Plan de contrôle, démos, RBAC et quotas tournent sur **kind** — sans facture
 Un cloud managé cache le passage conteneur → orchestration (et IaaS). OpenYard
 les rend lisibles :
 
-1. Console `/console` : onglet Workloads ou **VM Linux**
-2. Workloads : manifest Deployment + Service + Ingress `{name}.openyard.local`
-3. Apply → pods Ready + URL HTTP via ingress-nginx
-4. VM Linux Ubuntu : launch / start / stop / delete (sim ou Multipass)
+1. Crée un **projet** (tenant) → namespace + quotas + `oy_…` API key
+2. Console `/console` : Projets / Workloads / VM Linux
+3. Workloads : Deployment + Service + Ingress `{name}.openyard.local`
+4. Apply → pods Ready + URL HTTP via ingress-nginx
+5. VM Linux Ubuntu : launch / start / stop / delete (sim ou Multipass)
 
 ## Site & console
 
 | URL | Contenu |
 | --- | --- |
 | `/` | Landing OpenYard |
-| `/console` | Workloads + VM Linux (Ubuntu) |
-| `/docs` | OpenAPI |
-| `/assets/*` | CSS / JS |
+| `/console` | Projets + Workloads + VM Linux |
 
-Le dossier `web/` est embarqué dans l’image Docker : sur kind,
-`http://openyard.local/` sert le site.
+## Projets (multi-tenant)
+
+```bash
+curl -s -X POST http://127.0.0.1:8000/projects \
+  -H 'content-type: application/json' \
+  -d '{"name":"acme","pods_quota":10,"cpu_quota":"1","memory_quota":"1Gi"}'
+# → api_key oy_…  (à garder) + namespace oy-acme
+
+curl -s -H "X-API-Key: oy_…" http://127.0.0.1:8000/workloads
+```
+
+- Projet `default` : namespace `openyard`, clé vide → accès anonyme si pas d’`OPENYARD_API_KEY` admin
+- Autres projets : namespace `oy-{name}`, ResourceQuota K8s si cluster ON
 
 ## API
 
@@ -40,7 +51,11 @@ Le dossier `web/` est embarqué dans l’image Docker : sur kind,
 | --- | --- | --- |
 | GET | `/health` | Liveness + mode cluster |
 | GET | `/metrics` | Prometheus |
-| GET | `/stats` | Workloads / pods désirés / pods prêts |
+| GET | `/stats` | Workloads / pods / projets (scopé) |
+| POST | `/projects` | Créer un tenant (clé API renvoyée) |
+| GET | `/projects` | Lister (sans secrets) |
+| GET | `/projects/{name}` | Détail (clé si autorisé) |
+| DELETE | `/projects/{name}` | Supprimer tenant + ressources |
 | POST | `/workloads` | Enregistrer (`apply: true` optionnel) |
 | GET | `/workloads` | Lister |
 | GET | `/workloads/{name}` | Détail |

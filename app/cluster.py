@@ -33,7 +33,7 @@ def cluster_enabled() -> bool:
     return os.getenv("OPENYARD_CLUSTER", "auto").lower() not in {"0", "false", "off", "no"}
 
 
-def _clients():
+def get_clients():
     try:
         from kubernetes import client, config
     except ImportError as exc:  # pragma: no cover
@@ -48,6 +48,10 @@ def _clients():
             raise ClusterUnavailable("aucun kubeconfig disponible") from exc
 
     return client.AppsV1Api(), client.CoreV1Api(), client.NetworkingV1Api(), client
+
+
+def _clients():
+    return get_clients()
 
 
 def apply_workload(workload: Workload) -> WorkloadRuntime:

@@ -41,6 +41,9 @@
         <span class="chip" id="poll-chip">live off</span>
       </div>
       <div class="tabs" role="tablist" aria-label="Ressources">
+        <button class="tab" type="button" data-tab="projects" role="tab" aria-selected="false">
+          Projets
+        </button>
         <button class="tab is-active" type="button" data-tab="workloads" role="tab" aria-selected="true">
           Workloads
         </button>
@@ -48,6 +51,55 @@
           VM Linux
         </button>
       </div>
+    </div>
+
+    <div class="shell console-layout is-hidden" data-panel="projects" hidden>
+      <aside class="side-panel">
+        <h2>Nouveau projet</h2>
+        <p>Namespace K8s <code class="mono">oy-nom</code>, quotas pods/CPU/RAM, clé API dédiée.</p>
+        <form id="project-form" class="form-grid" autocomplete="off">
+          <label>
+            Nom
+            <input id="pname" name="name" type="text" required pattern="[a-z0-9]([-a-z0-9]*[a-z0-9])?" maxlength="40" placeholder="acme" />
+          </label>
+          <label>
+            Quota pods
+            <input id="pods_quota" name="pods_quota" type="number" min="1" max="50" value="10" required />
+          </label>
+          <label>
+            Quota CPU
+            <input id="cpu_quota" name="cpu_quota" type="text" value="1" required />
+          </label>
+          <label>
+            Quota mémoire
+            <input id="memory_quota" name="memory_quota" type="text" value="1Gi" required />
+          </label>
+          <button class="btn btn-solid" type="submit">Créer le projet</button>
+        </form>
+      </aside>
+      <section class="main-panel" aria-labelledby="projects-title">
+        <div class="toolbar">
+          <h2 id="projects-title">Projets (tenants)</h2>
+          <button class="btn btn-ghost btn-sm" type="button" id="prefresh-btn">Rafraîchir</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Projet</th>
+                <th>Namespace</th>
+                <th>Quota pods</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="projects-body">
+              <tr>
+                <td colspan="4" class="empty">Chargement…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
 
     <div class="shell console-layout" data-panel="workloads">

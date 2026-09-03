@@ -5,6 +5,9 @@
   const bodyEl = document.getElementById("workloads-body");
   const form = document.getElementById("create-form");
   const refreshBtn = document.getElementById("refresh-btn");
+  const projectForm = document.getElementById("project-form");
+  const projectsBody = document.getElementById("projects-body");
+  const prefreshBtn = document.getElementById("prefresh-btn");
   const instanceForm = document.getElementById("instance-form");
   const instancesBody = document.getElementById("instances-body");
   const instanceStats = document.getElementById("instance-stats");
@@ -196,6 +199,37 @@
       .join("");
   }
 
+  async function loadProjects() {
+    if (!projectsBody) return;
+    const items = await api("/projects");
+    if (!items.length) {
+      projectsBody.innerHTML = `<tr><td colspan="4" class="empty">Aucun projet.</td></tr>`;
+      return;
+    }
+    projectsBody.innerHTML = items
+      .map((p) => {
+        return `
+        <tr data-name="${p.name}">
+          <td>
+            <div class="name">${p.name}</div>
+            <div class="image">${p.message || ""}</div>
+          </td>
+          <td class="mono">${p.namespace}</td>
+          <td class="mono">${p.pods_used}/${p.pods_quota}</td>
+          <td>
+            <div class="row-actions">
+              ${
+                p.name !== "default"
+                  ? `<button class="btn btn-danger btn-sm" data-paction="delete" type="button">Supprimer</button>`
+                  : `<span class="chip">bootstrap</span>`
+              }
+            </div>
+          </td>
+        </tr>`;
+      })
+      .join("");
+  }
+
   async function loadWorkloads() {
     const items = await api("/workloads");
     renderRows(Array.isArray(items) ? items : []);
@@ -208,7 +242,7 @@
 
   async function refresh() {
     await loadAuthChip();
-    await Promise.all([loadStats(), loadWorkloads(), loadInstances()]);
+    await Promise.all([loadStats(), loadWorkloads(), loadInstances(), loadProjects()]);
   }
 
   function startPolling() {
@@ -236,6 +270,47 @@
         panel.classList.toggle("is-hidden", !on);
       });
     });
+  });
+
+  projectForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const payload = {
+      name: projectForm.name.value.trim(),
+      pods_quota: Number(projectForm.pods_quota.value),
+      cpu_quota: projectForm.cpu_quota.value.trim(),
+      memory_quota: projectForm.memory_quota.value.trim(),
+    };
+    try {
+      const created = await api("/projects", { method: "POST", body: JSON.stringify(payload) });
+      projectForm.reset();
+      projectForm.pods_quota.value = "10";
+      projectForm.cpu_quota.value = "1";
+      projectForm.memory_quota.value = "1Gi";
+      if (created.api_key && apiKeyInput) {
+        apiKeyInput.value = created.api_key;
+        localStorage.setItem(KEY_STORAGE, created.api_key);
+      }
+      toast(`Projet « ${created.name} » · clé API enregistrée · ns ${created.namespace}`);
+      await refresh();
+    } catch (err) {
+      toast(err.message, true);
+    }
+  });
+
+  projectsBody?.addEventListener("click", async (e) => {
+    const btn = e.target.closest("button[data-paction]");
+    if (!btn) return;
+    const row = btn.closest("tr[data-name]");
+    const name = row?.dataset.name;
+    if (!name || name === "default") return;
+    if (!window.confirm(`Supprimer le projet « ${name} » et ses ressources ?`)) return;
+    try {
+      await api(`/projects/${encodeURIComponent(name)}`, { method: "DELETE" });
+      toast(`Projet supprimé : ${name}`);
+      await refresh();
+    } catch (err) {
+      toast(err.message, true);
+    }
   });
 
   form.addEventListener("submit", async (e) => {
@@ -359,6 +434,7 @@
 
   refreshBtn.addEventListener("click", () => refresh().catch((err) => toast(err.message, true)));
   irefreshBtn.addEventListener("click", () => refresh().catch((err) => toast(err.message, true)));
+  prefreshBtn?.addEventListener("click", () => refresh().catch((err) => toast(err.message, true)));
   modalClose.addEventListener("click", closeModal);
   modal.addEventListener("click", (e) => {
     if (e.target === modal) closeModal();

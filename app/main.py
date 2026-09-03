@@ -2,13 +2,20 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import Annotated
 
-from fastapi import FastAPI, HTTPException, Request, Response, status
+from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 
 from app import __version__
-from app.auth import api_key_configured, api_key_valid, is_public_path
+from app.auth import (
+    Identity,
+    api_key_configured,
+    is_open_signup_path,
+    is_public_path,
+    resolve_identity,
+)
 from app.cluster import (
     ClusterError,
     ClusterUnavailable,
@@ -32,12 +39,16 @@ from app.models import (
     Instance,
     InstanceCreate,
     LinuxImageInfo,
+    Project,
+    ProjectCreate,
+    ProjectPublic,
     Workload,
     WorkloadCreate,
     WorkloadStats,
     catalog_payload,
 )
-from app.store import WorkloadStore
+from app.store import QuotaExceeded, WorkloadStore
+from app.tenancy import delete_project_namespace, ensure_project_namespace
 
 store = WorkloadStore(namespace=os.getenv("OPENYARD_NAMESPACE", "openyard"))
 WEB_DIR = Path(__file__).resolve().parent.parent / "web"
@@ -46,9 +57,8 @@ app = FastAPI(
     title="OpenYard",
     version=__version__,
     description=(
-        "Open cloud open source : site + console + API. Workloads Docker → pods "
-        "Kubernetes, et VM Linux Ubuntu (sim ou Multipass). Auth optionnelle via "
-        "header X-API-Key (OPENYARD_API_KEY)."
+        "Open cloud multi-tenant : projets (namespace + quotas + API key), "
+        "workloads Kubernetes, VM Linux, console web."
     ),
 )
 
@@ -58,18 +68,50 @@ if WEB_DIR.is_dir():
         app.mount("/assets", StaticFiles(directory=assets), name="assets")
 
 
-@app.middleware("http")
-async def require_api_key(request: Request, call_next):
-    if not api_key_configured() or is_public_path(request.url.path):
-        return await call_next(request)
-    if api_key_valid(request.headers.get("x-api-key")):
-        return await call_next(request)
-    return JSONResponse(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        content={"detail": "API key invalide ou manquante (header X-API-Key)"},
-        headers={"WWW-Authenticate": "ApiKey"},
+def _identity_from_request(request: Request) -> Identity | None:
+    return resolve_identity(
+        request.headers.get("x-api-key"),
+        find_by_key=store.find_project_by_key,
+        default_project=store.ensure_default_project(),
     )
 
+
+@app.middleware("http")
+async def auth_middleware(request: Request, call_next):
+    path = request.url.path
+    if is_public_path(path) or is_open_signup_path(request.method, path):
+        return await call_next(request)
+
+    # GET /projects : listage public (sans secrets)
+    if request.method.upper() == "GET" and path == "/projects":
+        return await call_next(request)
+
+    identity = _identity_from_request(request)
+    if identity is None:
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content={"detail": "API key invalide ou manquante (header X-API-Key)"},
+            headers={"WWW-Authenticate": "ApiKey"},
+        )
+    request.state.identity = identity
+    return await call_next(request)
+
+
+def current_identity(request: Request) -> Identity:
+    identity = getattr(request.state, "identity", None)
+    if identity is None:
+        # chemins publics / signup : identité soft default
+        resolved = _identity_from_request(request)
+        if resolved is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="API key invalide ou manquante (header X-API-Key)",
+            )
+        return resolved
+    return identity
+
+
+IdentityDep = Annotated[Identity, Depends(current_identity)]
 
 def _cluster_http(exc: Exception) -> HTTPException:
     if isinstance(exc, ClusterUnavailable):
@@ -81,8 +123,32 @@ def _compute_http(exc: Exception) -> HTTPException:
     return HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc))
 
 
-def _stats() -> WorkloadStats:
-    return store.stats(cluster_mode=cluster_enabled(), compute_driver=compute_driver_name())
+def _scope_project(identity: Identity) -> str | None:
+    """None = vue admin globale."""
+    if identity.kind == "admin":
+        return None
+    return identity.project_name
+
+
+def _require_project(identity: Identity) -> Project:
+    project = identity.project
+    if project is None:
+        project = store.ensure_default_project()
+    return project
+
+
+def _to_public(project: Project) -> ProjectPublic:
+    return ProjectPublic(
+        name=project.name,
+        namespace=project.namespace,
+        pods_quota=project.pods_quota,
+        cpu_quota=project.cpu_quota,
+        memory_quota=project.memory_quota,
+        created_at=project.created_at,
+        message=project.message,
+        api_key_set=bool(project.api_key),
+        pods_used=store.pods_used(project.name),
+    )
 
 
 @app.get("/", include_in_schema=False)
@@ -109,12 +175,13 @@ def health() -> dict[str, object]:
         "cluster": cluster_enabled(),
         "compute": compute_driver_name(),
         "auth_required": api_key_configured(),
+        "projects": len(store.list_projects()),
     }
 
 
 @app.get("/metrics", include_in_schema=False)
 def metrics() -> PlainTextResponse:
-    stats = _stats()
+    stats = store.stats(cluster_mode=cluster_enabled(), compute_driver=compute_driver_name())
     body = "\n".join(
         [
             "# HELP openyard_up 1 if the control plane is up",
@@ -135,6 +202,9 @@ def metrics() -> PlainTextResponse:
             "# HELP openyard_instances_running Running compute instances",
             "# TYPE openyard_instances_running gauge",
             f"openyard_instances_running {stats.instances_running}",
+            "# HELP openyard_projects Tenant projects",
+            "# TYPE openyard_projects gauge",
+            f"openyard_projects {stats.projects}",
             "",
         ]
     )
@@ -142,8 +212,81 @@ def metrics() -> PlainTextResponse:
 
 
 @app.get("/stats", response_model=WorkloadStats, tags=["ops"])
-def stats() -> WorkloadStats:
-    return _stats()
+def stats(identity: IdentityDep) -> WorkloadStats:
+    return store.stats(
+        cluster_mode=cluster_enabled(),
+        compute_driver=compute_driver_name(),
+        project=_scope_project(identity),
+    )
+
+
+@app.post(
+    "/projects",
+    response_model=Project,
+    status_code=status.HTTP_201_CREATED,
+    tags=["projects"],
+)
+def create_project(payload: ProjectCreate) -> Project:
+    try:
+        project = store.create_project(payload)
+    except KeyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Projet déjà existant : {payload.name}",
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    if cluster_enabled():
+        try:
+            msg = ensure_project_namespace(project)
+            project = project.model_copy(update={"message": msg})
+            store.update_project(project)
+        except (ClusterUnavailable, ClusterError) as exc:
+            store.delete_project(project.name)
+            raise _cluster_http(exc) from exc
+    return project
+
+
+@app.get("/projects", response_model=list[ProjectPublic], tags=["projects"])
+def list_projects() -> list[ProjectPublic]:
+    return [_to_public(item) for item in store.list_projects()]
+
+
+@app.get("/projects/{name}", response_model=Project, tags=["projects"])
+def get_project(name: str, identity: IdentityDep) -> Project:
+    project = store.get_project(name)
+    if project is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Projet introuvable")
+    if identity.kind == "project" and identity.project_name != name:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé")
+    if identity.kind == "anonymous" and name != "default":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé")
+    return project
+
+
+@app.delete("/projects/{name}", status_code=status.HTTP_204_NO_CONTENT, tags=["projects"])
+def remove_project(name: str, identity: IdentityDep) -> Response:
+    if identity.kind not in {"admin", "anonymous"} and identity.project_name != name:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé")
+    if identity.kind == "project" and identity.project_name == name:
+        pass  # owner can delete
+    elif identity.kind == "anonymous" and name != "default":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Clé admin ou clé projet requise",
+        )
+    try:
+        project = store.delete_project(name)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    if project is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Projet introuvable")
+    try:
+        delete_project_namespace(project)
+    except ClusterError as exc:
+        raise _cluster_http(exc) from exc
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @app.post(
@@ -152,23 +295,30 @@ def stats() -> WorkloadStats:
     status_code=status.HTTP_201_CREATED,
     tags=["workloads"],
 )
-def create_workload(payload: WorkloadCreate) -> Workload:
+def create_workload(
+    payload: WorkloadCreate,
+    identity: IdentityDep,
+) -> Workload:
+    project = _require_project(identity)
     try:
-        workload = store.create(payload)
+        workload = store.create(payload, project=project)
     except KeyError as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Workload déjà enregistré : {payload.name}",
         ) from exc
+    except QuotaExceeded as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
     if payload.apply:
         try:
             runtime = apply_workload(workload)
         except (ClusterUnavailable, ClusterError) as exc:
-            store.delete(workload.name)
+            store.delete(workload.name, project=project.name)
             raise _cluster_http(exc) from exc
         updated = store.set_runtime(
             workload.name,
+            project=project.name,
             status="ready" if runtime.available else "deploying",
             ready_replicas=runtime.ready_replicas,
             message=runtime.message,
@@ -180,21 +330,36 @@ def create_workload(payload: WorkloadCreate) -> Workload:
 
 
 @app.get("/workloads", response_model=list[Workload], tags=["workloads"])
-def list_workloads() -> list[Workload]:
-    return store.list()
+def list_workloads(identity: IdentityDep) -> list[Workload]:
+    return store.list(project=_scope_project(identity))
 
 
 @app.get("/workloads/{name}", response_model=Workload, tags=["workloads"])
-def get_workload(name: str) -> Workload:
-    workload = store.get(name)
+def get_workload(name: str, identity: IdentityDep) -> Workload:
+    project = _require_project(identity)
+    # admin: search all
+    if identity.kind == "admin":
+        for item in store.list():
+            if item.name == name:
+                return item
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workload introuvable")
+    workload = store.get(name, project=project.name)
     if workload is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workload introuvable")
     return workload
 
 
 @app.post("/workloads/{name}/apply", response_model=Workload, tags=["workloads"])
-def apply_named_workload(name: str) -> Workload:
-    workload = store.get(name)
+def apply_named_workload(
+    name: str, identity: IdentityDep
+) -> Workload:
+    project = _require_project(identity)
+    workload = store.get(name, project=project.name)
+    if workload is None and identity.kind == "admin":
+        for item in store.list():
+            if item.name == name:
+                workload = item
+                break
     if workload is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workload introuvable")
     try:
@@ -203,6 +368,7 @@ def apply_named_workload(name: str) -> Workload:
         raise _cluster_http(exc) from exc
     updated = store.set_runtime(
         name,
+        project=workload.project,
         status="ready" if runtime.available else "deploying",
         ready_replicas=runtime.ready_replicas,
         message=runtime.message,
@@ -213,8 +379,14 @@ def apply_named_workload(name: str) -> Workload:
 
 
 @app.get("/workloads/{name}/status", response_model=Workload, tags=["workloads"])
-def workload_status(name: str) -> Workload:
-    workload = store.get(name)
+def workload_status(name: str, identity: IdentityDep) -> Workload:
+    project = _require_project(identity)
+    workload = store.get(name, project=project.name)
+    if workload is None and identity.kind == "admin":
+        for item in store.list():
+            if item.name == name:
+                workload = item
+                break
     if workload is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workload introuvable")
     try:
@@ -223,6 +395,7 @@ def workload_status(name: str) -> Workload:
         raise _cluster_http(exc) from exc
     updated = store.set_runtime(
         name,
+        project=workload.project,
         status="ready" if runtime.available else "deploying",
         ready_replicas=runtime.ready_replicas,
         message=runtime.message,
@@ -233,10 +406,17 @@ def workload_status(name: str) -> Workload:
 
 
 @app.delete("/workloads/{name}", status_code=status.HTTP_204_NO_CONTENT, tags=["workloads"])
-def delete_workload(name: str) -> Response:
-    workload = store.delete(name)
+def delete_workload(name: str, identity: IdentityDep) -> Response:
+    project = _require_project(identity)
+    workload = store.get(name, project=project.name)
+    if workload is None and identity.kind == "admin":
+        for item in store.list():
+            if item.name == name:
+                workload = item
+                break
     if workload is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workload introuvable")
+    store.delete(name, project=workload.project)
     if cluster_enabled() and workload.status in {"ready", "deploying"}:
         try:
             delete_from_cluster(workload)
@@ -248,8 +428,16 @@ def delete_workload(name: str) -> Response:
 
 
 @app.get("/workloads/{name}/manifest", tags=["workloads"])
-def workload_manifest(name: str) -> PlainTextResponse:
-    workload = store.get(name)
+def workload_manifest(
+    name: str, identity: IdentityDep
+) -> PlainTextResponse:
+    project = _require_project(identity)
+    workload = store.get(name, project=project.name)
+    if workload is None and identity.kind == "admin":
+        for item in store.list():
+            if item.name == name:
+                workload = item
+                break
     if workload is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workload introuvable")
     return PlainTextResponse(render_bundle(workload), media_type="application/yaml")
@@ -266,12 +454,16 @@ def linux_images_catalog() -> list[LinuxImageInfo]:
     status_code=status.HTTP_201_CREATED,
     tags=["compute"],
 )
-def create_instance(payload: InstanceCreate) -> Instance:
+def create_instance(
+    payload: InstanceCreate,
+    identity: IdentityDep,
+) -> Instance:
     if not compute_enabled():
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="compute off")
+    project = _require_project(identity)
     driver = compute_driver_name()
     try:
-        instance = store.create_instance(payload, driver=driver)
+        instance = store.create_instance(payload, project=project, driver=driver)
     except KeyError as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -284,11 +476,12 @@ def create_instance(payload: InstanceCreate) -> Instance:
     try:
         runtime = launch_instance(payload)
     except ComputeError as exc:
-        store.delete_instance(payload.name)
+        store.delete_instance(payload.name, project=project.name)
         raise _compute_http(exc) from exc
 
     updated = store.set_instance(
         payload.name,
+        project=project.name,
         status=runtime.status,
         ipv4=runtime.ipv4,
         message=runtime.message,
@@ -299,21 +492,23 @@ def create_instance(payload: InstanceCreate) -> Instance:
 
 
 @app.get("/instances", response_model=list[Instance], tags=["compute"])
-def list_instances() -> list[Instance]:
-    return store.list_instances()
+def list_instances(identity: IdentityDep) -> list[Instance]:
+    return store.list_instances(project=_scope_project(identity))
 
 
 @app.get("/instances/{name}", response_model=Instance, tags=["compute"])
-def get_instance(name: str) -> Instance:
-    instance = store.get_instance(name)
+def get_instance(name: str, identity: IdentityDep) -> Instance:
+    project = _require_project(identity)
+    instance = store.get_instance(name, project=project.name)
     if instance is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Instance introuvable")
     return instance
 
 
 @app.get("/instances/{name}/status", response_model=Instance, tags=["compute"])
-def instance_status(name: str) -> Instance:
-    instance = store.get_instance(name)
+def instance_status(name: str, identity: IdentityDep) -> Instance:
+    project = _require_project(identity)
+    instance = store.get_instance(name, project=project.name)
     if instance is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Instance introuvable")
     try:
@@ -322,6 +517,7 @@ def instance_status(name: str) -> Instance:
         raise _compute_http(exc) from exc
     updated = store.set_instance(
         name,
+        project=project.name,
         status=runtime.status,
         ipv4=runtime.ipv4,
         message=runtime.message,
@@ -332,8 +528,9 @@ def instance_status(name: str) -> Instance:
 
 
 @app.post("/instances/{name}/stop", response_model=Instance, tags=["compute"])
-def instance_stop(name: str) -> Instance:
-    instance = store.get_instance(name)
+def instance_stop(name: str, identity: IdentityDep) -> Instance:
+    project = _require_project(identity)
+    instance = store.get_instance(name, project=project.name)
     if instance is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Instance introuvable")
     try:
@@ -342,6 +539,7 @@ def instance_stop(name: str) -> Instance:
         raise _compute_http(exc) from exc
     updated = store.set_instance(
         name,
+        project=project.name,
         status=runtime.status,
         ipv4=runtime.ipv4,
         message=runtime.message,
@@ -351,8 +549,9 @@ def instance_stop(name: str) -> Instance:
 
 
 @app.post("/instances/{name}/start", response_model=Instance, tags=["compute"])
-def instance_start(name: str) -> Instance:
-    instance = store.get_instance(name)
+def instance_start(name: str, identity: IdentityDep) -> Instance:
+    project = _require_project(identity)
+    instance = store.get_instance(name, project=project.name)
     if instance is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Instance introuvable")
     try:
@@ -361,6 +560,7 @@ def instance_start(name: str) -> Instance:
         raise _compute_http(exc) from exc
     updated = store.set_instance(
         name,
+        project=project.name,
         status=runtime.status,
         ipv4=runtime.ipv4,
         message=runtime.message,
@@ -370,13 +570,14 @@ def instance_start(name: str) -> Instance:
 
 
 @app.delete("/instances/{name}", status_code=status.HTTP_204_NO_CONTENT, tags=["compute"])
-def remove_instance(name: str) -> Response:
-    instance = store.get_instance(name)
+def remove_instance(name: str, identity: IdentityDep) -> Response:
+    project = _require_project(identity)
+    instance = store.get_instance(name, project=project.name)
     if instance is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Instance introuvable")
     try:
         delete_instance(name)
     except ComputeError as exc:
         raise _compute_http(exc) from exc
-    store.delete_instance(name)
+    store.delete_instance(name, project=project.name)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

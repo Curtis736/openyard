@@ -7,6 +7,36 @@ from pydantic import BaseModel, Field, field_validator
 from app.linux_images import list_linux_images, resolve_linux_image
 
 
+class ProjectCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=40, pattern=r"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$")
+    pods_quota: int = Field(default=10, ge=1, le=50)
+    cpu_quota: str = Field(default="1", pattern=r"^[0-9]+m?$|^[0-9]+(\.[0-9]+)?$")
+    memory_quota: str = Field(default="1Gi", pattern=r"^[0-9]+(Mi|Gi)$")
+
+
+class Project(BaseModel):
+    name: str
+    namespace: str
+    api_key: str = ""
+    pods_quota: int = 10
+    cpu_quota: str = "1"
+    memory_quota: str = "1Gi"
+    created_at: datetime
+    message: str = ""
+
+
+class ProjectPublic(BaseModel):
+    name: str
+    namespace: str
+    pods_quota: int
+    cpu_quota: str
+    memory_quota: str
+    created_at: datetime
+    message: str = ""
+    api_key_set: bool = False
+    pods_used: int = 0
+
+
 class WorkloadCreate(BaseModel):
     name: str = Field(min_length=1, max_length=63, pattern=r"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$")
     image: str = Field(min_length=1, max_length=255)
@@ -27,6 +57,7 @@ class WorkloadCreate(BaseModel):
 
 class Workload(BaseModel):
     name: str
+    project: str = "default"
     image: str
     replicas: int
     port: int
@@ -48,6 +79,8 @@ class WorkloadStats(BaseModel):
     instances: int = 0
     instances_running: int = 0
     compute_driver: str = "sim"
+    projects: int = 0
+    project: str | None = None
 
 
 class InstanceCreate(BaseModel):
@@ -65,6 +98,7 @@ class InstanceCreate(BaseModel):
 
 class Instance(BaseModel):
     name: str
+    project: str = "default"
     image: str
     os: str = "linux"
     distro: str = "ubuntu"
