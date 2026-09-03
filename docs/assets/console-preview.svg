@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540">
+  <rect width="960" height="540" fill="#f4f6f8"/>
+  <rect x="0" y="0" width="960" height="56" fill="#0f766e"/>
+  <text x="24" y="36" fill="#fff" font-family="system-ui,sans-serif" font-size="20" font-weight="700">OpenYard</text>
+  <text x="140" y="36" fill="#ccfbf1" font-family="system-ui,sans-serif" font-size="14">Cloud Console</text>
+  <rect x="24" y="80" width="912" height="40" rx="4" fill="#fff" stroke="#cbd5e1"/>
+  <text x="40" y="105" fill="#64748b" font-family="system-ui,sans-serif" font-size="13">API key · projet default · poll ON</text>
+  <rect x="24" y="140" width="120" height="32" rx="2" fill="#0f766e"/>
+  <text x="44" y="161" fill="#fff" font-family="system-ui,sans-serif" font-size="13">Workloads</text>
+  <rect x="152" y="140" width="100" height="32" rx="2" fill="#e2e8f0"/>
+  <text x="172" y="161" fill="#334155" font-family="system-ui,sans-serif" font-size="13">Projets</text>
+  <rect x="260" y="140" width="90" height="32" rx="2" fill="#e2e8f0"/>
+  <text x="280" y="161" fill="#334155" font-family="system-ui,sans-serif" font-size="13">VM Linux</text>
+  <rect x="24" y="190" width="912" height="320" rx="4" fill="#fff" stroke="#cbd5e1"/>
+  <text x="40" y="230" fill="#0f172a" font-family="system-ui,sans-serif" font-size="16" font-weight="600">Créer un workload</text>
+  <rect x="40" y="250" width="280" height="36" rx="2" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="52" y="273" fill="#94a3b8" font-family="system-ui,sans-serif" font-size="13">name · image allowlist · port</text>
+  <rect x="40" y="310" width="912" height="1" fill="#e2e8f0"/>
+  <text x="40" y="340" fill="#64748b" font-family="system-ui,sans-serif" font-size="13">edge-api · nginxinc/…:1.27-alpine · ready 2/2 · edge-api.openyard.local</text>
+  <text x="40" y="370" fill="#64748b" font-family="system-ui,sans-serif" font-size="13">demo-web · Running · Ingress OK</text>
+</svg>
