@@ -4,6 +4,11 @@
   const bodyEl = document.getElementById("workloads-body");
   const form = document.getElementById("create-form");
   const refreshBtn = document.getElementById("refresh-btn");
+  const instanceForm = document.getElementById("instance-form");
+  const instancesBody = document.getElementById("instances-body");
+  const instanceStats = document.getElementById("instance-stats");
+  const irefreshBtn = document.getElementById("irefresh-btn");
+  const driverHint = document.getElementById("driver-hint");
   const modal = document.getElementById("modal");
   const modalTitle = document.getElementById("modal-title");
   const modalBody = document.getElementById("modal-body");
@@ -54,9 +59,10 @@
   }
 
   function statusClass(status) {
-    const s = (status || "registered").toLowerCase();
-    if (s.includes("ready")) return "status-ready";
-    if (s.includes("deploy")) return "status-deploying";
+    const s = (status || "").toLowerCase();
+    if (s.includes("ready") || s === "running") return "status-ready";
+    if (s.includes("deploy") || s === "pending") return "status-deploying";
+    if (s === "stopped") return "status-registered";
     return "status-registered";
   }
 
@@ -76,11 +82,18 @@
     try {
       const s = await api("/stats");
       const on = Boolean(s.cluster_mode);
+      if (driverHint) driverHint.textContent = s.compute_driver || "sim";
       statsEl.innerHTML = `
         <span class="chip"><strong>${s.workloads}</strong> workloads</span>
         <span class="chip"><strong>${s.pods_ready}/${s.pods_desired}</strong> pods</span>
         <span class="chip ${on ? "chip-ok" : "chip-off"}"><strong>${on ? "cluster ON" : "cluster OFF"}</strong></span>
       `;
+      if (instanceStats) {
+        instanceStats.innerHTML = `
+          <span class="chip"><strong>${s.instances_running}/${s.instances}</strong> running</span>
+          <span class="chip"><strong>${s.compute_driver}</strong> driver</span>
+        `;
+      }
     } catch (err) {
       statsEl.innerHTML = `<span class="chip chip-off">${err.message}</span>`;
     }
@@ -115,14 +128,64 @@
       .join("");
   }
 
+  function renderInstances(items) {
+    if (!items.length) {
+      instancesBody.innerHTML = `<tr><td colspan="4" class="empty">Aucune instance. Lance-en une à gauche.</td></tr>`;
+      return;
+    }
+    instancesBody.innerHTML = items
+      .map((i) => {
+        const status = i.status || "pending";
+        return `
+        <tr data-name="${i.name}">
+          <td>
+            <div class="name">${i.name}</div>
+            <div class="image">${i.image} · ${i.vcpus} vCPU · ${i.memory_mb} MiB · ${i.driver}</div>
+          </td>
+          <td><span class="status ${statusClass(status)}">${status}</span></td>
+          <td class="mono">${i.ipv4 || "—"}</td>
+          <td>
+            <div class="row-actions">
+              <button class="btn btn-ghost btn-sm" data-iaction="start" type="button">Start</button>
+              <button class="btn btn-ghost btn-sm" data-iaction="stop" type="button">Stop</button>
+              <button class="btn btn-ghost btn-sm" data-iaction="status" type="button">Status</button>
+              <button class="btn btn-danger btn-sm" data-iaction="delete" type="button">Supprimer</button>
+            </div>
+          </td>
+        </tr>`;
+      })
+      .join("");
+  }
+
   async function loadWorkloads() {
     const items = await api("/workloads");
     renderRows(Array.isArray(items) ? items : []);
   }
 
-  async function refresh() {
-    await Promise.all([loadStats(), loadWorkloads()]);
+  async function loadInstances() {
+    const items = await api("/instances");
+    renderInstances(Array.isArray(items) ? items : []);
   }
+
+  async function refresh() {
+    await Promise.all([loadStats(), loadWorkloads(), loadInstances()]);
+  }
+
+  document.querySelectorAll(".tab").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      const target = tab.dataset.tab;
+      document.querySelectorAll(".tab").forEach((t) => {
+        const on = t.dataset.tab === target;
+        t.classList.toggle("is-active", on);
+        t.setAttribute("aria-selected", on ? "true" : "false");
+      });
+      document.querySelectorAll("[data-panel]").forEach((panel) => {
+        const on = panel.dataset.panel === target;
+        panel.hidden = !on;
+        panel.classList.toggle("is-hidden", !on);
+      });
+    });
+  });
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -138,6 +201,28 @@
       form.port.value = "8080";
       form.replicas.value = "1";
       toast(`Workload « ${payload.name} » créé`);
+      await refresh();
+    } catch (err) {
+      toast(err.message, true);
+    }
+  });
+
+  instanceForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const payload = {
+      name: instanceForm.name.value.trim(),
+      image: instanceForm.image.value.trim(),
+      vcpus: Number(instanceForm.vcpus.value),
+      memory_mb: Number(instanceForm.memory_mb.value),
+      launch: true,
+    };
+    try {
+      const created = await api("/instances", { method: "POST", body: JSON.stringify(payload) });
+      instanceForm.reset();
+      instanceForm.image.value = "22.04";
+      instanceForm.vcpus.value = "1";
+      instanceForm.memory_mb.value = "1024";
+      toast(`Instance « ${created.name} » · ${created.status}`);
       await refresh();
     } catch (err) {
       toast(err.message, true);
@@ -176,7 +261,41 @@
     }
   });
 
+  instancesBody.addEventListener("click", async (e) => {
+    const btn = e.target.closest("button[data-iaction]");
+    if (!btn) return;
+    const row = btn.closest("tr[data-name]");
+    const name = row?.dataset.name;
+    if (!name) return;
+    const action = btn.dataset.iaction;
+    try {
+      btn.disabled = true;
+      if (action === "start") {
+        await api(`/instances/${encodeURIComponent(name)}/start`, { method: "POST" });
+        toast(`Start ${name}`);
+        await refresh();
+      } else if (action === "stop") {
+        await api(`/instances/${encodeURIComponent(name)}/stop`, { method: "POST" });
+        toast(`Stop ${name}`);
+        await refresh();
+      } else if (action === "status") {
+        const st = await api(`/instances/${encodeURIComponent(name)}/status`);
+        openModal(`Instance — ${name}`, JSON.stringify(st, null, 2));
+      } else if (action === "delete") {
+        if (!window.confirm(`Supprimer l’instance « ${name} » ?`)) return;
+        await api(`/instances/${encodeURIComponent(name)}`, { method: "DELETE" });
+        toast(`Instance supprimée : ${name}`);
+        await refresh();
+      }
+    } catch (err) {
+      toast(err.message, true);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
   refreshBtn.addEventListener("click", () => refresh().catch((err) => toast(err.message, true)));
+  irefreshBtn.addEventListener("click", () => refresh().catch((err) => toast(err.message, true)));
   modalClose.addEventListener("click", closeModal);
   modal.addEventListener("click", (e) => {
     if (e.target === modal) closeModal();

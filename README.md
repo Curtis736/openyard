@@ -3,28 +3,28 @@
 [![CI](https://github.com/Curtis736/openyard/actions/workflows/ci.yml/badge.svg)](https://github.com/Curtis736/openyard/actions)
 [![Licence](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
 
-**Open cloud** open source : site web + console + API. On enregistre une image
-Docker, le control plane produit le Deployment Kubernetes et peut l’**appliquer**
-sur le cluster pour faire tourner des **pods**. Plan de contrôle, charges de
-démo, RBAC et quotas tournent sur **kind** — sans facture cloud.
+**Open cloud** open source : site web + console + API.
+
+- **Workloads** : image Docker → Deployment Kubernetes → pods
+- **Compute** : instances / VM (driver `sim` ou **Multipass**)
+
+Plan de contrôle, démos, RBAC et quotas tournent sur **kind** — sans facture cloud.
 
 ## Idée
 
-Un cloud managé cache le passage conteneur → orchestration. OpenYard le rend
-lisible :
+Un cloud managé cache le passage conteneur → orchestration (et IaaS). OpenYard
+les rend lisibles :
 
-1. Console `/console` (ou `POST /workloads`) avec une image et des réplicas
-2. `GET /workloads/{name}/manifest` renvoie Deployment + Service
-3. Apply depuis la console (ou `POST .../apply`) crée les pods via l’API
-   Kubernetes, avec le ServiceAccount du plan de contrôle
-4. Suivi du statut : `readyReplicas` du Deployment
+1. Console `/console` : onglet Workloads ou Instances (VM)
+2. Workloads : manifest Deployment + Service, apply cluster, statut pods
+3. Instances : launch / start / stop / delete (sim ou Multipass)
 
 ## Site & console
 
 | URL | Contenu |
 | --- | --- |
 | `/` | Landing OpenYard |
-| `/console` | UI pour créer / apply / status / YAML / supprimer |
+| `/console` | Workloads + Instances (VM) |
 | `/docs` | OpenAPI |
 | `/assets/*` | CSS / JS |
 
@@ -45,6 +45,26 @@ Le dossier `web/` est embarqué dans l’image Docker : sur kind,
 | GET | `/workloads/{name}/status` | Statut pods (readyReplicas) |
 | GET | `/workloads/{name}/manifest` | YAML Deployment + Service |
 | DELETE | `/workloads/{name}` | Retirer (et supprimer du cluster si appliqué) |
+| POST | `/instances` | Créer / lancer une VM |
+| GET | `/instances` | Lister |
+| GET | `/instances/{name}/status` | Rafraîchir le statut |
+| POST | `/instances/{name}/stop` | Arrêter |
+| POST | `/instances/{name}/start` | Démarrer |
+| DELETE | `/instances/{name}` | Supprimer |
+
+### Compute drivers
+
+| `OPENYARD_COMPUTE` | Comportement |
+| --- | --- |
+| `auto` (défaut) | Multipass si installé, sinon `sim` |
+| `sim` | Cycle de vie VM simulé (IP `10.88.0.x`) |
+| `multipass` | Vraies micro-VM via [Multipass](https://canonical.com/multipass) |
+| `off` | Compute désactivé |
+
+```bash
+# Vraies VM (installe Multipass puis) :
+OPENYARD_COMPUTE=multipass make run
+```
 
 ## Local (API + site)
 

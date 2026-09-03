@@ -42,3 +42,34 @@ class WorkloadStats(BaseModel):
     pods_desired: int
     pods_ready: int = 0
     cluster_mode: bool = False
+    instances: int = 0
+    instances_running: int = 0
+    compute_driver: str = "sim"
+
+
+class InstanceCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=63, pattern=r"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$")
+    image: str = Field(default="22.04", min_length=1, max_length=64)
+    vcpus: int = Field(default=1, ge=1, le=4)
+    memory_mb: int = Field(default=1024, ge=256, le=8192)
+    launch: bool = True
+
+    @field_validator("image")
+    @classmethod
+    def image_ok(cls, value: str) -> str:
+        cleaned = value.strip()
+        if not cleaned or " " in cleaned:
+            raise ValueError("image / release invalide")
+        return cleaned
+
+
+class Instance(BaseModel):
+    name: str
+    image: str
+    vcpus: int
+    memory_mb: int
+    created_at: datetime
+    status: str = "pending"
+    ipv4: str = ""
+    driver: str = "sim"
+    message: str = ""

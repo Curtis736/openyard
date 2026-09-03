@@ -16,8 +16,18 @@ from app.cluster import (
     delete_from_cluster,
     read_workload_status,
 )
+from app.compute import (
+    ComputeError,
+    compute_driver_name,
+    compute_enabled,
+    delete_instance,
+    launch_instance,
+    read_instance,
+    start_instance,
+    stop_instance,
+)
 from app.manifests import render_bundle
-from app.models import Workload, WorkloadCreate, WorkloadStats
+from app.models import Instance, InstanceCreate, Workload, WorkloadCreate, WorkloadStats
 from app.store import WorkloadStore
 
 store = WorkloadStore(namespace=os.getenv("OPENYARD_NAMESPACE", "openyard"))
@@ -27,9 +37,8 @@ app = FastAPI(
     title="OpenYard",
     version=__version__,
     description=(
-        "Open cloud open source : site web + console + API. On enregistre une "
-        "image Docker, le control plane produit le Deployment Kubernetes et peut "
-        "l’appliquer sur le cluster pour faire tourner des pods."
+        "Open cloud open source : site + console + API. Workloads Docker → pods "
+        "Kubernetes, et instances Compute (VM simulées ou Multipass)."
     ),
 )
 
@@ -43,6 +52,14 @@ def _cluster_http(exc: Exception) -> HTTPException:
     if isinstance(exc, ClusterUnavailable):
         return HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
     return HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc))
+
+
+def _compute_http(exc: Exception) -> HTTPException:
+    return HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc))
+
+
+def _stats() -> WorkloadStats:
+    return store.stats(cluster_mode=cluster_enabled(), compute_driver=compute_driver_name())
 
 
 @app.get("/", include_in_schema=False)
@@ -67,12 +84,13 @@ def health() -> dict[str, object]:
         "status": "ok",
         "version": __version__,
         "cluster": cluster_enabled(),
+        "compute": compute_driver_name(),
     }
 
 
 @app.get("/metrics", include_in_schema=False)
 def metrics() -> PlainTextResponse:
-    stats = store.stats(cluster_mode=cluster_enabled())
+    stats = _stats()
     body = "\n".join(
         [
             "# HELP openyard_up 1 if the control plane is up",
@@ -87,6 +105,12 @@ def metrics() -> PlainTextResponse:
             "# HELP openyard_pods_ready Ready pod replicas reported by the API",
             "# TYPE openyard_pods_ready gauge",
             f"openyard_pods_ready {stats.pods_ready}",
+            "# HELP openyard_instances Registered compute instances",
+            "# TYPE openyard_instances gauge",
+            f"openyard_instances {stats.instances}",
+            "# HELP openyard_instances_running Running compute instances",
+            "# TYPE openyard_instances_running gauge",
+            f"openyard_instances_running {stats.instances_running}",
             "",
         ]
     )
@@ -95,7 +119,7 @@ def metrics() -> PlainTextResponse:
 
 @app.get("/stats", response_model=WorkloadStats, tags=["ops"])
 def stats() -> WorkloadStats:
-    return store.stats(cluster_mode=cluster_enabled())
+    return _stats()
 
 
 @app.post(
@@ -202,3 +226,125 @@ def workload_manifest(name: str) -> PlainTextResponse:
     if workload is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workload introuvable")
     return PlainTextResponse(render_bundle(workload), media_type="application/yaml")
+
+
+@app.post(
+    "/instances",
+    response_model=Instance,
+    status_code=status.HTTP_201_CREATED,
+    tags=["compute"],
+)
+def create_instance(payload: InstanceCreate) -> Instance:
+    if not compute_enabled():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="compute off")
+    driver = compute_driver_name()
+    try:
+        instance = store.create_instance(payload, driver=driver)
+    except KeyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Instance déjà enregistrée : {payload.name}",
+        ) from exc
+
+    if not payload.launch:
+        return instance
+
+    try:
+        runtime = launch_instance(payload)
+    except ComputeError as exc:
+        store.delete_instance(payload.name)
+        raise _compute_http(exc) from exc
+
+    updated = store.set_instance(
+        payload.name,
+        status=runtime.status,
+        ipv4=runtime.ipv4,
+        message=runtime.message,
+        driver=driver,
+    )
+    assert updated is not None
+    return updated
+
+
+@app.get("/instances", response_model=list[Instance], tags=["compute"])
+def list_instances() -> list[Instance]:
+    return store.list_instances()
+
+
+@app.get("/instances/{name}", response_model=Instance, tags=["compute"])
+def get_instance(name: str) -> Instance:
+    instance = store.get_instance(name)
+    if instance is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Instance introuvable")
+    return instance
+
+
+@app.get("/instances/{name}/status", response_model=Instance, tags=["compute"])
+def instance_status(name: str) -> Instance:
+    instance = store.get_instance(name)
+    if instance is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Instance introuvable")
+    try:
+        runtime = read_instance(name)
+    except ComputeError as exc:
+        raise _compute_http(exc) from exc
+    updated = store.set_instance(
+        name,
+        status=runtime.status,
+        ipv4=runtime.ipv4,
+        message=runtime.message,
+        driver=compute_driver_name(),
+    )
+    assert updated is not None
+    return updated
+
+
+@app.post("/instances/{name}/stop", response_model=Instance, tags=["compute"])
+def instance_stop(name: str) -> Instance:
+    instance = store.get_instance(name)
+    if instance is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Instance introuvable")
+    try:
+        runtime = stop_instance(name)
+    except ComputeError as exc:
+        raise _compute_http(exc) from exc
+    updated = store.set_instance(
+        name,
+        status=runtime.status,
+        ipv4=runtime.ipv4,
+        message=runtime.message,
+    )
+    assert updated is not None
+    return updated
+
+
+@app.post("/instances/{name}/start", response_model=Instance, tags=["compute"])
+def instance_start(name: str) -> Instance:
+    instance = store.get_instance(name)
+    if instance is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Instance introuvable")
+    try:
+        runtime = start_instance(name)
+    except ComputeError as exc:
+        raise _compute_http(exc) from exc
+    updated = store.set_instance(
+        name,
+        status=runtime.status,
+        ipv4=runtime.ipv4,
+        message=runtime.message,
+    )
+    assert updated is not None
+    return updated
+
+
+@app.delete("/instances/{name}", status_code=status.HTTP_204_NO_CONTENT, tags=["compute"])
+def remove_instance(name: str) -> Response:
+    instance = store.get_instance(name)
+    if instance is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Instance introuvable")
+    try:
+        delete_instance(name)
+    except ComputeError as exc:
+        raise _compute_http(exc) from exc
+    store.delete_instance(name)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

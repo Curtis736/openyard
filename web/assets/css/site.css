@@ -344,6 +344,38 @@ code,
 
 /* Console */
 
+.tabs {
+  display: inline-flex;
+  gap: 0.35rem;
+  padding: 0.25rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg-panel);
+  margin-bottom: 0.25rem;
+}
+
+.tab {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--fg-muted);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.45rem 0.95rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.tab.is-active {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.is-hidden {
+  display: none !important;
+}
+
 .console-layout {
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr);

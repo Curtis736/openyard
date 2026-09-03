@@ -13,6 +13,8 @@ client = TestClient(app)
 def setup_function() -> None:
     for item in list(store.list()):
         store.delete(item.name)
+    for item in list(store.list_instances()):
+        store.delete_instance(item.name)
 
 
 def test_health() -> None:
@@ -159,6 +161,7 @@ def test_landing_and_console() -> None:
     console = client.get("/console")
     assert console.status_code == 200
     assert b"Nouveau workload" in console.content
+    assert b"Instances" in console.content
     assert b"/assets/js/console.js" in console.content
 
     css = client.get("/assets/css/site.css")
@@ -168,3 +171,40 @@ def test_landing_and_console() -> None:
     js = client.get("/assets/js/console.js")
     assert js.status_code == 200
     assert b"/workloads" in js.content
+    assert b"/instances" in js.content
+
+
+def test_instances_lifecycle_sim(monkeypatch) -> None:
+    monkeypatch.setenv("OPENYARD_COMPUTE", "sim")
+    created = client.post(
+        "/instances",
+        json={"name": "web-01", "image": "22.04", "vcpus": 1, "memory_mb": 1024},
+    )
+    assert created.status_code == 201
+    body = created.json()
+    assert body["name"] == "web-01"
+    assert body["status"] == "running"
+    assert body["ipv4"].startswith("10.88.0.")
+    assert body["driver"] == "sim"
+
+    listed = client.get("/instances")
+    assert any(item["name"] == "web-01" for item in listed.json())
+
+    stopped = client.post("/instances/web-01/stop")
+    assert stopped.status_code == 200
+    assert stopped.json()["status"] == "stopped"
+
+    started = client.post("/instances/web-01/start")
+    assert started.status_code == 200
+    assert started.json()["status"] == "running"
+
+    stats = client.get("/stats")
+    assert stats.json()["instances"] >= 1
+    assert stats.json()["compute_driver"] == "sim"
+
+    health = client.get("/health")
+    assert health.json()["compute"] == "sim"
+
+    deleted = client.delete("/instances/web-01")
+    assert deleted.status_code == 204
+    assert client.get("/instances/web-01").status_code == 404
