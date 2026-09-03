@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenYard — open cloud pour containers &amp; pods</title>
+    <meta
+      name="description"
+      content="OpenYard est un open cloud minimal : enregistre une image Docker, déploie un workload Kubernetes, suis le statut des pods."
+    />
+    <link rel="stylesheet" href="/assets/css/site.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="shell">
+        <a class="brand" href="/">
+          <span class="brand-mark" aria-hidden="true"></span>
+          OpenYard
+        </a>
+        <nav class="nav" aria-label="Navigation principale">
+          <a href="#features">Fonctionnalités</a>
+          <a href="#how">Comment ça marche</a>
+          <a href="/docs">API</a>
+          <a class="btn btn-solid btn-sm" href="/console">Console</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="shell hero">
+        <div>
+          <p class="kicker">Open cloud · Docker · Kubernetes</p>
+          <h1>Ton cloud open source pour <em>containers</em> et pods.</h1>
+          <p class="lead">
+            OpenYard enregistre une image Docker comme workload, génère Deployment + Service,
+            applique sur le cluster et expose le statut des pods — via API ou console web.
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-solid" href="/console">Ouvrir la console</a>
+            <a class="btn btn-ghost" href="https://github.com/Curtis736/openyard" target="_blank" rel="noreferrer"
+              >Voir sur GitHub</a
+            >
+          </div>
+        </div>
+        <aside class="panel" aria-label="Aperçu terminal">
+          <div class="panel-head">
+            <div class="dots" aria-hidden="true"><span></span><span></span><span></span></div>
+            <span>openyard · control plane</span>
+          </div>
+          <pre class="terminal"><span class="prompt">$</span> curl -s localhost:8000/stats
+{
+  "workloads": 2,
+  "pods_desired": 3,
+  "pods_ready": 3,
+  "cluster_mode": true
+}
+
+<span class="prompt">$</span> curl -s -X POST localhost:8000/workloads \
+  -H 'content-type: application/json' \
+  -d '{"name":"hello","image":"nginxinc/nginx-unprivileged:1.27"}'
+
+<span class="muted"># → Deployment + Service YAML prêts à appliquer</span></pre>
+        </aside>
+      </section>
+
+      <section class="section" id="features">
+        <div class="shell">
+          <h2>Un vrai open cloud, volontairement petit</h2>
+          <p class="section-lead">
+            Pas un hyperscaler. Une plateforme pédagogique et portfolio-ready : control plane,
+            manifests, cluster, métriques, et maintenant une UI.
+          </p>
+          <div class="grid-3">
+            <article class="card">
+              <h3>Workloads</h3>
+              <p>Enregistre une image, ports, réplicas, probes. Stockage local, CRUD complet.</p>
+            </article>
+            <article class="card">
+              <h3>Manifests K8s</h3>
+              <p>Génère Deployment + Service, applique au cluster, lit readyReplicas et pods.</p>
+            </article>
+            <article class="card">
+              <h3>Ops ready</h3>
+              <p>Health, Prometheus metrics, RBAC, quotas, NetworkPolicy, Kind + CI.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="how">
+        <div class="shell">
+          <h2>De l’image au pod en 4 étapes</h2>
+          <p class="section-lead">La console fait la même chose que l’API — sans curl.</p>
+          <ol class="steps">
+            <li>
+              <div>
+                <strong>Créer un workload</strong>
+                <p style="margin: 0.35rem 0 0; color: var(--fg-muted)">
+                  Nom, image Docker, port, réplicas. Optionnellement expose un Service.
+                </p>
+              </div>
+            </li>
+            <li>
+              <div>
+                <strong>Inspecter le manifest</strong>
+                <p style="margin: 0.35rem 0 0; color: var(--fg-muted)">
+                  YAML Deployment + Service généré côté control plane.
+                </p>
+              </div>
+            </li>
+            <li>
+              <div>
+                <strong>Apply sur le cluster</strong>
+                <p style="margin: 0.35rem 0 0; color: var(--fg-muted)">
+                  kubectl-like via le client Kubernetes Python (in-cluster ou kubeconfig).
+                </p>
+              </div>
+            </li>
+            <li>
+              <div>
+                <strong>Suivre le statut</strong>
+                <p style="margin: 0.35rem 0 0; color: var(--fg-muted)">
+                  Ready / deploying / registered — pods listés depuis l’API cluster.
+                </p>
+              </div>
+            </li>
+          </ol>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="shell">
+        <span>OpenYard · open source · MIT</span>
+        <a href="https://github.com/Curtis736/openyard" target="_blank" rel="noreferrer"
+          >github.com/Curtis736/openyard</a
+        >
+      </div>
+    </footer>
+  </body>
+</html>

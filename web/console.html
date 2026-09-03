@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Console — OpenYard</title>
+    <meta name="description" content="Console OpenYard : créer, appliquer et suivre des workloads Kubernetes." />
+    <link rel="stylesheet" href="/assets/css/site.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="shell">
+        <a class="brand" href="/">
+          <span class="brand-mark" aria-hidden="true"></span>
+          OpenYard
+        </a>
+        <nav class="nav" aria-label="Navigation">
+          <a href="/">Accueil</a>
+          <a href="/docs">API</a>
+          <a href="/console" aria-current="page">Console</a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="shell console-layout">
+      <aside class="side-panel">
+        <h2>Nouveau workload</h2>
+        <p>Enregistre une image Docker. Apply ensuite pour créer les pods.</p>
+        <form id="create-form" class="form-grid" autocomplete="off">
+          <label>
+            Nom
+            <input id="name" name="name" type="text" required pattern="[a-z0-9]([-a-z0-9]*[a-z0-9])?" maxlength="63" placeholder="demo-web" />
+          </label>
+          <label>
+            Image Docker
+            <input id="image" name="image" type="text" required placeholder="nginxinc/nginx-unprivileged:1.27" />
+          </label>
+          <label>
+            Port conteneur
+            <input id="port" name="port" type="number" min="1" max="65535" value="8080" required />
+          </label>
+          <label>
+            Réplicas
+            <input id="replicas" name="replicas" type="number" min="1" max="5" value="1" required />
+          </label>
+          <button class="btn btn-solid" type="submit">Créer</button>
+        </form>
+      </aside>
+
+      <section class="main-panel" aria-labelledby="workloads-title">
+        <div class="toolbar">
+          <h2 id="workloads-title">Workloads</h2>
+          <div class="stats-row" id="stats" aria-live="polite">
+            <span class="chip">chargement…</span>
+          </div>
+          <button class="btn btn-ghost btn-sm" type="button" id="refresh-btn">Rafraîchir</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Workload</th>
+                <th>Statut</th>
+                <th>Réplicas</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="workloads-body">
+              <tr>
+                <td colspan="4" class="empty">Chargement…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <div id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" hidden>
+      <div class="modal-card">
+        <div class="modal-head">
+          <h3 id="modal-title">Manifest</h3>
+          <button class="btn btn-ghost btn-sm" type="button" id="modal-close">Fermer</button>
+        </div>
+        <pre id="modal-body"></pre>
+      </div>
+    </div>
+
+    <script src="/assets/js/console.js" defer></script>
+  </body>
+</html>

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Response, status
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import FileResponse, PlainTextResponse
+from fastapi.staticfiles import StaticFiles
 
 from app import __version__
 from app.cluster import (
@@ -19,22 +21,44 @@ from app.models import Workload, WorkloadCreate, WorkloadStats
 from app.store import WorkloadStore
 
 store = WorkloadStore(namespace=os.getenv("OPENYARD_NAMESPACE", "openyard"))
+WEB_DIR = Path(__file__).resolve().parent.parent / "web"
 
 app = FastAPI(
     title="OpenYard",
     version=__version__,
     description=(
-        "Mini-cloud open source : on enregistre une image Docker, l’API produit "
-        "le Deployment Kubernetes et peut l’appliquer sur le cluster pour faire "
-        "tourner des pods."
+        "Open cloud open source : site web + console + API. On enregistre une "
+        "image Docker, le control plane produit le Deployment Kubernetes et peut "
+        "l’appliquer sur le cluster pour faire tourner des pods."
     ),
 )
+
+if WEB_DIR.is_dir():
+    assets = WEB_DIR / "assets"
+    if assets.is_dir():
+        app.mount("/assets", StaticFiles(directory=assets), name="assets")
 
 
 def _cluster_http(exc: Exception) -> HTTPException:
     if isinstance(exc, ClusterUnavailable):
         return HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
     return HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc))
+
+
+@app.get("/", include_in_schema=False)
+def landing() -> FileResponse:
+    index = WEB_DIR / "index.html"
+    if not index.is_file():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="UI absente")
+    return FileResponse(index)
+
+
+@app.get("/console", include_in_schema=False)
+def console() -> FileResponse:
+    page = WEB_DIR / "console.html"
+    if not page.is_file():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="UI absente")
+    return FileResponse(page)
 
 
 @app.get("/health", tags=["ops"])

@@ -3,21 +3,33 @@
 [![CI](https://github.com/Curtis736/openyard/actions/workflows/ci.yml/badge.svg)](https://github.com/Curtis736/openyard/actions)
 [![Licence](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
 
-Petit **cloud open source** local : on enregistre une image Docker, l’API
-produit le Deployment Kubernetes et peut l’**appliquer** sur le cluster pour
-faire tourner des **pods**. Plan de contrôle, charges de démo, RBAC et quotas
-tournent sur **kind** — sans facture cloud.
+**Open cloud** open source : site web + console + API. On enregistre une image
+Docker, le control plane produit le Deployment Kubernetes et peut l’**appliquer**
+sur le cluster pour faire tourner des **pods**. Plan de contrôle, charges de
+démo, RBAC et quotas tournent sur **kind** — sans facture cloud.
 
 ## Idée
 
 Un cloud managé cache le passage conteneur → orchestration. OpenYard le rend
 lisible :
 
-1. `POST /workloads` avec une image et un nombre de réplicas
+1. Console `/console` (ou `POST /workloads`) avec une image et des réplicas
 2. `GET /workloads/{name}/manifest` renvoie Deployment + Service
-3. `POST /workloads/{name}/apply` (ou `"apply": true`) crée les pods via l’API
+3. Apply depuis la console (ou `POST .../apply`) crée les pods via l’API
    Kubernetes, avec le ServiceAccount du plan de contrôle
-4. `GET /workloads/{name}/status` lit les `readyReplicas` du Deployment
+4. Suivi du statut : `readyReplicas` du Deployment
+
+## Site & console
+
+| URL | Contenu |
+| --- | --- |
+| `/` | Landing OpenYard |
+| `/console` | UI pour créer / apply / status / YAML / supprimer |
+| `/docs` | OpenAPI |
+| `/assets/*` | CSS / JS |
+
+Le dossier `web/` est embarqué dans l’image Docker : sur kind,
+`http://openyard.local/` sert le site.
 
 ## API
 
@@ -34,9 +46,7 @@ lisible :
 | GET | `/workloads/{name}/manifest` | YAML Deployment + Service |
 | DELETE | `/workloads/{name}` | Retirer (et supprimer du cluster si appliqué) |
 
-OpenAPI : `/docs`.
-
-## Local (API seule)
+## Local (API + site)
 
 ```bash
 python3 -m venv .venv
@@ -45,6 +55,8 @@ pip install -r requirements-dev.txt
 make lint test
 make run
 ```
+
+Ouvre http://127.0.0.1:8000/ puis http://127.0.0.1:8000/console
 
 ```bash
 curl -s -X POST http://127.0.0.1:8000/workloads \
@@ -75,6 +87,7 @@ scripts/kind-up.sh
 
 ```bash
 make up
+# site : http://openyard.local/  (Host header ou /etc/hosts)
 curl -s -H 'Host: openyard.local' http://127.0.0.1:8080/health
 kubectl -n openyard get pods,sa,role,resourcequota
 ```
@@ -110,7 +123,7 @@ push GHCR sur `main`.
 | Cible | Action |
 | --- | --- |
 | `make lint` / `make test` | Qualité |
-| `make run` | API locale sans cluster |
+| `make run` | API + site local sans cluster |
 | `make up` / `make down` | kind |
 | `make compose` | Docker Compose |
 | `make manifests` | `kustomize build` |

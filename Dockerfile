@@ -11,6 +11,7 @@ RUN useradd --create-home --uid 10001 --shell /usr/sbin/nologin appuser
 WORKDIR /app
 COPY --from=builder /install /usr/local
 COPY app ./app
+COPY web ./web
 
 USER appuser
 EXPOSE 8000

@@ -147,3 +147,24 @@ def test_create_with_apply_flag() -> None:
         )
     assert response.status_code == 201
     assert response.json()["status"] == "deploying"
+
+
+def test_landing_and_console() -> None:
+    home = client.get("/")
+    assert home.status_code == 200
+    assert "text/html" in home.headers["content-type"]
+    assert b"OpenYard" in home.content
+    assert b"/console" in home.content
+
+    console = client.get("/console")
+    assert console.status_code == 200
+    assert b"Nouveau workload" in console.content
+    assert b"/assets/js/console.js" in console.content
+
+    css = client.get("/assets/css/site.css")
+    assert css.status_code == 200
+    assert b"--accent" in css.content
+
+    js = client.get("/assets/js/console.js")
+    assert js.status_code == 200
+    assert b"/workloads" in js.content
