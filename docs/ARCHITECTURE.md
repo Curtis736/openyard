@@ -71,7 +71,7 @@ En cluster kind, `OPENYARD_COMPUTE=sim` (pas de Multipass dans le pod).
 | --- | --- |
 | Local | `data/openyard.db` (ou `OPENYARD_DB`) |
 | Docker Compose | volume nommé `openyard-data` → `/data` |
-| Kubernetes | **PVC** `openyard-data` monté sur `/data` |
+| Kubernetes | **PVC** `openyard-data` (1Gi, RWO) monté sur `/data` |
 
 Sans PVC, un `emptyDir` perdrait projets / workloads au restart du pod.
 
