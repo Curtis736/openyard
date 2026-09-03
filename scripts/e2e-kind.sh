@@ -19,9 +19,33 @@ api() {
     "$@"
 }
 
+dump_debug() {
+  echo "== debug ==" >&2
+  kubectl -n openyard get pods,svc,ingress,endpoints -o wide >&2 || true
+  kubectl -n openyard describe ingress openyard-control >&2 || true
+  kubectl -n ingress-nginx get pods -o wide >&2 || true
+}
+
 echo "== health =="
-api GET /health | tee /tmp/openyard-health.json
-python3 -c 'import json,sys; d=json.load(open("/tmp/openyard-health.json")); assert d.get("status")=="ok"'
+deadline=$((SECONDS + TIMEOUT_S))
+ok=0
+while (( SECONDS < deadline )); do
+  body="$(api GET /health || true)"
+  echo "$body" | tee /tmp/openyard-health.json >/dev/null
+  if python3 -c 'import json,sys; d=json.load(open("/tmp/openyard-health.json")); assert d.get("status")=="ok"' 2>/dev/null; then
+    ok=1
+    break
+  fi
+  echo "waiting for /health (got: ${body:0:80})"
+  sleep 3
+done
+if [[ "$ok" -ne 1 ]]; then
+  dump_debug
+  echo "timeout waiting for /health" >&2
+  exit 1
+fi
+cat /tmp/openyard-health.json
+echo
 
 echo "== cleanup éventuel =="
 api DELETE "/workloads/${NAME}" -o /dev/null -w "%{http_code}\n" || true
@@ -44,7 +68,11 @@ while (( SECONDS < deadline )); do
   fi
   sleep 5
 done
-[[ "$status" == "ready" ]] || { echo "timeout waiting ready" >&2; exit 1; }
+if [[ "$status" != "ready" ]]; then
+  dump_debug
+  echo "timeout waiting ready" >&2
+  exit 1
+fi
 
 echo "== ingress =="
 kubectl -n openyard get ingress "${NAME}" -o jsonpath='{.spec.rules[0].host}{"\n"}' | tee /tmp/openyard-ingress-host.txt
@@ -53,7 +81,11 @@ grep -qx "${NAME}.openyard.local" /tmp/openyard-ingress-host.txt
 echo "== http via ingress =="
 code="$(curl -sS -o /tmp/openyard-http.out -w "%{http_code}" -H "Host: ${NAME}.openyard.local" "http://127.0.0.1:8080/")"
 echo "http=${code}"
-[[ "$code" == "200" ]] || { cat /tmp/openyard-http.out; exit 1; }
+if [[ "$code" != "200" ]]; then
+  cat /tmp/openyard-http.out
+  dump_debug
+  exit 1
+fi
 
 echo "== cleanup =="
 api DELETE "/workloads/${NAME}" -o /dev/null

@@ -5,8 +5,6 @@ metadata:
   namespace: openyard
   labels:
     app.kubernetes.io/name: openyard-control
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   ingressClassName: nginx
   rules:

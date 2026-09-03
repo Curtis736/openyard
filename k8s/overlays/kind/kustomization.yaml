@@ -6,3 +6,9 @@ images:
   - name: ghcr.io/curtis736/openyard
     newName: openyard
     newTag: local
+# kindnet + hostPort ingress-nginx : NP trop stricte → 503 sur l’Ingress
+patches:
+  - path: delete-networkpolicy.yaml
+    target:
+      kind: NetworkPolicy
+      name: openyard-control
