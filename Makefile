@@ -10,6 +10,7 @@ help:
 	@echo "down       détruit le cluster kind"
 	@echo "build      image Docker locale"
 	@echo "manifests  kustomize build overlays/kind"
+	@echo "secret     crée/maj le Secret admin (OPENYARD_API_KEY)"
 
 lint:
 	ruff check .
