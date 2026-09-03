@@ -6,6 +6,7 @@ metadata:
   labels:
     app.kubernetes.io/name: openyard-control
 data:
+  # Secrets (OPENYARD_API_KEY) → Secret openyard-control, pas ici.
   LOG_LEVEL: info
   OPENYARD_NAMESPACE: openyard
   OPENYARD_CLUSTER: "true"
