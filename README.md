@@ -206,5 +206,8 @@ Trivy, push GHCR sur `main`.
 
 ## Limites connues
 
-- VM Linux `sim` = cycle de vie simulé ; Multipass = vraies Ubuntu hors pod kind
-- Pas multi-tenant / pas facturation — volontairement minimal
+- Multi-tenant soft (namespaces `oy-*` + quotas) : pas d’IAM cloud ni facturation
+- VM Linux `sim` = cycle de vie simulé ; Multipass = vraies Ubuntu **hors** pod kind
+- Overlay kind : NetworkPolicy du control-plane désactivée (hostPort ingress)
+- Clés projet stockées en clair dans SQLite
+- Auth admin optionnelle (Secret `OPENYARD_API_KEY`)
