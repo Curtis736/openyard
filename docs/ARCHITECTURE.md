@@ -74,3 +74,9 @@ En cluster kind, `OPENYARD_COMPUTE=sim` (pas de Multipass dans le pod).
 | Kubernetes | **PVC** `openyard-data` monté sur `/data` |
 
 Sans PVC, un `emptyDir` perdrait projets / workloads au restart du pod.
+
+## Supply chain (images)
+
+Les workloads ne peuvent tirer que des images dont le nom matche
+`OPENYARD_ALLOWED_IMAGE_PREFIXES`. Le tag `:latest` (ou l’absence de tag)
+est refusé.
