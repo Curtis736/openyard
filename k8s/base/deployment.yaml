@@ -36,6 +36,8 @@ spec:
           envFrom:
             - configMapRef:
                 name: openyard-control
+            - secretRef:
+                name: openyard-control
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
