@@ -176,6 +176,7 @@ make e2e
 ```
 
 État persistant SQLite : `OPENYARD_DB` (défaut `data/openyard.db`, `/data/openyard.db` en cluster).
+En Kubernetes le répertoire `/data` est un **PVC** `openyard-data` (pas un `emptyDir`).
 
 Détruire : `make down`
 
