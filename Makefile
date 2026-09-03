@@ -1,4 +1,4 @@
-.PHONY: help lint test run compose up down build manifests e2e
+.PHONY: help lint test run compose up down build manifests e2e secret
 
 help:
 	@echo "lint       ruff"
@@ -38,3 +38,6 @@ down:
 
 manifests:
 	kustomize build k8s/overlays/kind
+
+secret:
+	OPENYARD_API_KEY="$${KEY:-$${OPENYARD_API_KEY:-}}" ./scripts/ensure-admin-secret.sh
