@@ -13,6 +13,8 @@
 
 Plan de contrôle, démos, RBAC et quotas tournent sur **kind** — sans facture cloud.
 
+Docs : [Architecture](docs/ARCHITECTURE.md) · [Sécurité](docs/SECURITY.md) · [Contribuer](docs/CONTRIBUTING.md)
+
 ## Idée
 
 Un cloud managé cache le passage conteneur → orchestration (et IaaS). OpenYard
