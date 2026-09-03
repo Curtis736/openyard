@@ -18,3 +18,8 @@ de production. Ce document décrit les contrôles présents et les limites.
 - `/metrics` et `/docs` publics
 - Overlay kind désactive la NetworkPolicy (hostPort ingress)
 - Pas de NetworkPolicy par tenant
+
+## Signaler un problème
+
+Ouvre une issue GitHub privée ou un PR décrivant le scénario.
+Pas de bug bounty — corrections bienvenues.
