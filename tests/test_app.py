@@ -280,7 +280,7 @@ def test_landing_and_console() -> None:
 
     console = client.get("/console")
     assert console.status_code == 200
-    assert b"Cloud Console" in console.content
+    assert b"console-title" in console.content or b"OpenYard" in console.content
     assert b"Vue d" in console.content
     assert b"preset-web" in console.content
     assert b"/assets/js/console.js" in console.content

@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>OpenYard — open cloud pour containers &amp; pods</title>
+    <title>OpenYard</title>
     <meta
       name="description"
-      content="OpenYard est un open cloud minimal : enregistre une image Docker, déploie un workload Kubernetes, suis le statut des pods."
+      content="OpenYard : open cloud local. Projets, containers Kubernetes, VM Linux — depuis le navigateur."
     />
     <link rel="stylesheet" href="/assets/css/site.css" />
   </head>
@@ -18,8 +18,8 @@
           OpenYard
         </a>
         <nav class="nav" aria-label="Navigation principale">
-          <a href="#features">Fonctionnalités</a>
-          <a href="#how">Comment ça marche</a>
+          <a href="#features">Fonctions</a>
+          <a href="#how">Parcours</a>
           <a href="/docs">API</a>
           <a class="btn btn-solid btn-sm" href="/console">Console</a>
         </nav>
@@ -29,98 +29,82 @@
     <main>
       <section class="shell hero">
         <div>
-          <p class="kicker">Open cloud · self-service web</p>
-          <h1>Ton open cloud : <em>tout créer</em> depuis le navigateur.</h1>
+          <p class="kicker">yard · kind · ubuntu</p>
+          <h1>OpenYard</h1>
           <p class="lead">
-            Projets multi-tenant, workloads Kubernetes, VM Linux Ubuntu — provisionne et suis
-            le runtime dans la Cloud Console, sans CLI obligatoire.
+            Petit cloud open source : un projet, des containers sur Kubernetes, des VM Linux.
+            Tout se crée dans la console.
           </p>
           <div class="hero-actions">
-            <a class="btn btn-solid" href="/console">Ouvrir la Cloud Console</a>
+            <a class="btn btn-solid" href="/console">Entrer dans la console</a>
             <a class="btn btn-ghost" href="https://github.com/Curtis736/openyard" target="_blank" rel="noreferrer"
-              >Voir sur GitHub</a
+              >Code source</a
             >
           </div>
         </div>
-        <aside class="panel" aria-label="Aperçu terminal">
+        <aside class="panel" aria-label="Exemple API">
           <div class="panel-head">
-            <div class="dots" aria-hidden="true"><span></span><span></span><span></span></div>
-            <span>openyard · control plane</span>
+            <span>exemple · POST /projects</span>
           </div>
-          <pre class="terminal"><span class="prompt">$</span> curl -s localhost:8000/stats
-{
-  "workloads": 2,
-  "pods_desired": 3,
-  "pods_ready": 3,
-  "cluster_mode": true
-}
-
-<span class="prompt">$</span> curl -s -X POST localhost:8000/workloads \
+          <pre class="terminal"><span class="prompt">$</span> curl -s localhost:8000/projects \
   -H 'content-type: application/json' \
-  -d '{"name":"hello","image":"nginxinc/nginx-unprivileged:1.27"}'
+  -d '{"name":"acme","pods_quota":10}'
 
-<span class="muted"># → Deployment + Service YAML prêts à appliquer</span></pre>
+<span class="muted"># namespace oy-acme + clé oy_…</span>
+
+<span class="prompt">$</span> curl -s localhost:8000/workloads \
+  -H "X-API-Key: oy_…" \
+  -d '{"name":"web","image":"nginxinc/nginx-unprivileged:1.27-alpine","apply":true}'</pre>
         </aside>
       </section>
 
       <section class="section" id="features">
         <div class="shell">
-          <h2>Un vrai open cloud, volontairement petit</h2>
-          <p class="section-lead">
-            Pas un hyperscaler. Une plateforme pédagogique et portfolio-ready : control plane,
-            manifests, cluster, métriques, et maintenant une UI.
-          </p>
+          <h2>Trois briques</h2>
+          <p class="section-lead">Pas un clone AWS. Juste ce qu’il faut pour montrer un control plane.</p>
           <div class="grid-3">
             <article class="card">
-              <h3>Cloud Console</h3>
-              <p>Une page web pour créer projets, containers et VM — apply inclus.</p>
+              <h3>Projets</h3>
+              <p>Tenant, namespace, quotas, clé API.</p>
             </article>
             <article class="card">
-              <h3>Workloads + Ingress</h3>
-              <p>Image Docker → pods Kubernetes + URL {name}.openyard.local.</p>
+              <h3>Workloads</h3>
+              <p>Image Docker → Deployment, Service, Ingress.</p>
             </article>
             <article class="card">
-              <h3>Projets &amp; VM Linux</h3>
-              <p>Tenants isolés (ns + quotas + clé) et Ubuntu sim / Multipass.</p>
+              <h3>VM Linux</h3>
+              <p>Ubuntu en sim ou via Multipass.</p>
             </article>
           </div>
         </div>
       </section>
 
-      <section class="section" id="how">
+      <section class="section" id="how" style="background: var(--bg)">
         <div class="shell">
-          <h2>De l’image au pod en 4 étapes</h2>
-          <p class="section-lead">La console fait la même chose que l’API — sans curl.</p>
+          <h2>Ordre d’usage</h2>
+          <p class="section-lead">Même flux dans la console et via l’API.</p>
           <ol class="steps">
             <li>
               <div>
-                <strong>Créer un workload</strong>
+                <strong>Créer un projet</strong>
                 <p style="margin: 0.35rem 0 0; color: var(--fg-muted)">
-                  Nom, image Docker, port, réplicas. Optionnellement expose un Service.
+                  Tu reçois une clé API et un namespace <code class="mono">oy-…</code>.
                 </p>
               </div>
             </li>
             <li>
               <div>
-                <strong>Inspecter le manifest</strong>
+                <strong>Déployer un workload</strong>
                 <p style="margin: 0.35rem 0 0; color: var(--fg-muted)">
-                  YAML Deployment + Service généré côté control plane.
+                  Image, port, réplicas. Apply crée les pods et l’Ingress.
                 </p>
               </div>
             </li>
             <li>
               <div>
-                <strong>Apply sur le cluster</strong>
+                <strong>Lancer une VM si besoin</strong>
                 <p style="margin: 0.35rem 0 0; color: var(--fg-muted)">
-                  kubectl-like via le client Kubernetes Python (in-cluster ou kubeconfig).
-                </p>
-              </div>
-            </li>
-            <li>
-              <div>
-                <strong>Suivre le statut</strong>
-                <p style="margin: 0.35rem 0 0; color: var(--fg-muted)">
-                  Ready / deploying / registered — pods listés depuis l’API cluster.
+                  Ubuntu 22.04 / 24.04 — start, stop, delete.
                 </p>
               </div>
             </li>
@@ -131,7 +115,7 @@
 
     <footer class="site-footer">
       <div class="shell">
-        <span>OpenYard · open source · MIT</span>
+        <span>OpenYard · MIT</span>
         <a href="https://github.com/Curtis736/openyard" target="_blank" rel="noreferrer"
           >github.com/Curtis736/openyard</a
         >
