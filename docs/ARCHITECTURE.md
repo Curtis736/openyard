@@ -36,3 +36,21 @@ flowchart TB
 
 - Projet `default` → namespace `openyard` (anonyme si pas d’admin key)
 - Autres projets → `oy-{name}` + clé `oy_…`
+
+## Chemin d’un workload
+
+```mermaid
+sequenceDiagram
+  participant U as Client
+  participant A as API
+  participant S as SQLite
+  participant K as kube-apiserver
+  participant I as ingress-nginx
+
+  U->>A: POST /workloads apply=true
+  A->>A: image allowlist
+  A->>S: persist Workload
+  A->>K: Deployment + Service + Ingress
+  K->>I: sync host name.openyard.local
+  U->>I: GET Host name.openyard.local
+```
