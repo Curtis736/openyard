@@ -112,6 +112,7 @@
           <td>
             <div class="name">${w.name}</div>
             <div class="image">${w.image}</div>
+            ${w.url ? `<div class="image"><a href="${w.url}" target="_blank" rel="noreferrer">${w.url}</a></div>` : ""}
           </td>
           <td><span class="status ${statusClass(status)}">${status}</span></td>
           <td class="mono">${w.ready_replicas ?? 0}/${w.replicas ?? "—"}</td>

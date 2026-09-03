@@ -1,8 +1,17 @@
 from __future__ import annotations
 
+import os
 from textwrap import dedent
 
 from app.models import Workload
+
+
+def ingress_domain() -> str:
+    return os.getenv("OPENYARD_INGRESS_DOMAIN", "openyard.local").strip() or "openyard.local"
+
+
+def workload_url(name: str) -> str:
+    return f"http://{name}.{ingress_domain()}"
 
 
 def render_deployment(workload: Workload) -> str:
@@ -87,5 +96,40 @@ def render_service(workload: Workload) -> str:
     )
 
 
+def render_ingress(workload: Workload) -> str:
+    host = f"{workload.name}.{ingress_domain()}"
+    return dedent(
+        f"""\
+        apiVersion: networking.k8s.io/v1
+        kind: Ingress
+        metadata:
+          name: {workload.name}
+          namespace: {workload.namespace}
+          labels:
+            app.kubernetes.io/name: {workload.name}
+            openyard.io/managed: "true"
+          annotations:
+            nginx.ingress.kubernetes.io/rewrite-target: /
+        spec:
+          ingressClassName: nginx
+          rules:
+            - host: {host}
+              http:
+                paths:
+                  - path: /
+                    pathType: Prefix
+                    backend:
+                      service:
+                        name: {workload.name}
+                        port:
+                          name: http
+        """
+    )
+
+
 def render_bundle(workload: Workload) -> str:
-    return f"{render_deployment(workload).rstrip()}\n---\n{render_service(workload)}"
+    return (
+        f"{render_deployment(workload).rstrip()}\n---\n"
+        f"{render_service(workload).rstrip()}\n---\n"
+        f"{render_ingress(workload)}"
+    )

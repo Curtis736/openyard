@@ -156,6 +156,7 @@ def create_workload(payload: WorkloadCreate) -> Workload:
             status="ready" if runtime.available else "deploying",
             ready_replicas=runtime.ready_replicas,
             message=runtime.message,
+            url=runtime.url,
         )
         assert updated is not None
         return updated
@@ -189,6 +190,7 @@ def apply_named_workload(name: str) -> Workload:
         status="ready" if runtime.available else "deploying",
         ready_replicas=runtime.ready_replicas,
         message=runtime.message,
+        url=runtime.url,
     )
     assert updated is not None
     return updated
@@ -208,6 +210,7 @@ def workload_status(name: str) -> Workload:
         status="ready" if runtime.available else "deploying",
         ready_replicas=runtime.ready_replicas,
         message=runtime.message,
+        url=runtime.url,
     )
     assert updated is not None
     return updated

@@ -57,6 +57,48 @@ jobs:
           kustomize build k8s/base | kubeconform -strict -ignore-missing-schemas -summary
           kustomize build k8s/overlays/kind | kubeconform -strict -ignore-missing-schemas -summary
 
+  e2e-kind:
+    name: E2E kind
+    needs: [lint-test, kustomize]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: v1.31.0
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.12.0
+        with:
+          cluster_name: openyard
+          config: kind-config.yaml
+          wait: 120s
+
+      - name: Install ingress-nginx
+        run: |
+          set -euo pipefail
+          kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.11.3/deploy/static/provider/kind/deploy.yaml
+          kubectl -n ingress-nginx wait --for=condition=ready pod \
+            -l app.kubernetes.io/component=controller --timeout=180s
+
+      - name: Build and load image
+        run: |
+          set -euo pipefail
+          docker build -t openyard:local .
+          kind load docker-image openyard:local --name openyard
+
+      - name: Deploy OpenYard
+        run: |
+          set -euo pipefail
+          kubectl apply -k k8s/overlays/kind
+          kubectl -n openyard rollout status deployment/openyard-control --timeout=180s
+
+      - name: Smoke e2e
+        run: ./scripts/e2e-kind.sh
+
   docker:
     name: Build, scan, push
     needs: [lint-test, kustomize]

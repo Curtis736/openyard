@@ -6,6 +6,10 @@ services:
     environment:
       OPENYARD_CLUSTER: "false"
       OPENYARD_NAMESPACE: openyard
+      OPENYARD_DB: /data/openyard.db
+      OPENYARD_COMPUTE: sim
+    volumes:
+      - openyard-data:/data
     read_only: true
     tmpfs:
       - /tmp
@@ -24,3 +28,6 @@ services:
       timeout: 3s
       retries: 3
       start_period: 8s
+
+volumes:
+  openyard-data:

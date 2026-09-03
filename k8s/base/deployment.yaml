@@ -47,7 +47,7 @@ spec:
               memory: 64Mi
             limits:
               cpu: 200m
-              memory: 128Mi
+              memory: 192Mi
           livenessProbe:
             httpGet:
               path: /health
@@ -63,6 +63,10 @@ spec:
           volumeMounts:
             - name: tmp
               mountPath: /tmp
+            - name: data
+              mountPath: /data
       volumes:
         - name: tmp
+          emptyDir: {}
+        - name: data
           emptyDir: {}

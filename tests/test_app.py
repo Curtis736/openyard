@@ -55,6 +55,8 @@ def test_create_list_manifest_and_delete() -> None:
     text = manifest.text
     assert "kind: Deployment" in text
     assert "kind: Service" in text
+    assert "kind: Ingress" in text
+    assert "edge-api.openyard.local" in text
     assert "image: ghcr.io/curtis736/openyard:latest" in text
     assert "replicas: 2" in text
     assert "runAsNonRoot: true" in text
@@ -103,6 +105,7 @@ def test_apply_updates_status() -> None:
         desired_replicas=1,
         available=True,
         message="MinimumReplicasAvailable",
+        url="http://demo-job.openyard.local",
     )
     with patch("app.main.apply_workload", return_value=runtime) as mocked:
         applied = client.post("/workloads/demo-job/apply")
@@ -110,6 +113,7 @@ def test_apply_updates_status() -> None:
     body = applied.json()
     assert body["status"] == "ready"
     assert body["ready_replicas"] == 1
+    assert body["url"] == "http://demo-job.openyard.local"
     mocked.assert_called_once()
 
 
@@ -136,6 +140,7 @@ def test_create_with_apply_flag() -> None:
         desired_replicas=1,
         available=False,
         message="waiting for pods",
+        url="http://auto-apply.openyard.local",
     )
     with patch("app.main.apply_workload", return_value=runtime):
         response = client.post(
@@ -148,7 +153,25 @@ def test_create_with_apply_flag() -> None:
             },
         )
     assert response.status_code == 201
-    assert response.json()["status"] == "deploying"
+    body = response.json()
+    assert body["status"] == "deploying"
+    assert body["url"] == "http://auto-apply.openyard.local"
+
+
+def test_sqlite_persists_across_store_instances(tmp_path) -> None:
+    from app.models import WorkloadCreate
+    from app.store import WorkloadStore
+
+    db = tmp_path / "persist.db"
+    first = WorkloadStore(namespace="openyard", db_path=db)
+    first.create(
+        WorkloadCreate(name="kept", image="nginxinc/nginx-unprivileged:1.27-alpine", port=8080)
+    )
+    second = WorkloadStore(namespace="openyard", db_path=db)
+    got = second.get("kept")
+    assert got is not None
+    assert got.name == "kept"
+    assert got.image.endswith("nginx-unprivileged:1.27-alpine")
 
 
 def test_landing_and_console() -> None:

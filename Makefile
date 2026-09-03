@@ -1,4 +1,4 @@
-.PHONY: help lint test run compose up down build manifests
+.PHONY: help lint test run compose up down build manifests e2e
 
 help:
 	@echo "lint       ruff"
@@ -6,6 +6,7 @@ help:
 	@echo "run        API locale (sans cluster)"
 	@echo "compose    docker compose up --build"
 	@echo "up         cluster kind + apply"
+	@echo "e2e        smoke e2e (cluster déjà up)"
 	@echo "down       détruit le cluster kind"
 	@echo "build      image Docker locale"
 	@echo "manifests  kustomize build overlays/kind"
@@ -17,7 +18,7 @@ test:
 	pytest -q
 
 run:
-	OPENYARD_CLUSTER=false uvicorn app.main:app --reload --port 8000
+	OPENYARD_CLUSTER=false OPENYARD_COMPUTE=sim uvicorn app.main:app --reload --port 8000
 
 compose:
 	docker compose up --build
@@ -27,6 +28,9 @@ build:
 
 up:
 	./scripts/kind-up.sh
+
+e2e:
+	./scripts/e2e-kind.sh
 
 down:
 	./scripts/kind-down.sh

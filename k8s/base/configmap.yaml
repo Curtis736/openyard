@@ -9,3 +9,6 @@ data:
   LOG_LEVEL: info
   OPENYARD_NAMESPACE: openyard
   OPENYARD_CLUSTER: "true"
+  OPENYARD_DB: /data/openyard.db
+  OPENYARD_INGRESS_DOMAIN: openyard.local
+  OPENYARD_COMPUTE: sim

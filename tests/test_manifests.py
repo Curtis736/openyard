@@ -18,6 +18,8 @@ def test_render_bundle_contains_security_defaults() -> None:
     text = render_bundle(workload)
     assert "kind: Deployment" in text
     assert "kind: Service" in text
+    assert "kind: Ingress" in text
+    assert "secure-app.openyard.local" in text
     assert "runAsNonRoot: true" in text
     assert "drop:" in text
     assert "ALL" in text

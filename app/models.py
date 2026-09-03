@@ -37,6 +37,7 @@ class Workload(BaseModel):
     status: str = "registered"
     ready_replicas: int = 0
     message: str = ""
+    url: str = ""
 
 
 class WorkloadStats(BaseModel):

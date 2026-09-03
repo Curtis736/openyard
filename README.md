@@ -5,8 +5,10 @@
 
 **Open cloud** open source : site web + console + API.
 
-- **Workloads** : image Docker → Deployment Kubernetes → pods
+- **Workloads** : image Docker → Deployment + Service + Ingress → pods
 - **VM Linux** : Ubuntu 22.04 / 24.04 (driver `sim` ou **Multipass**)
+- **Persistance** : SQLite (`OPENYARD_DB`)
+- **CI** : lint, tests, kubeconform, Trivy, **e2e kind**
 
 Plan de contrôle, démos, RBAC et quotas tournent sur **kind** — sans facture cloud.
 
@@ -16,8 +18,9 @@ Un cloud managé cache le passage conteneur → orchestration (et IaaS). OpenYar
 les rend lisibles :
 
 1. Console `/console` : onglet Workloads ou **VM Linux**
-2. Workloads : manifest Deployment + Service, apply cluster, statut pods
-3. VM Linux Ubuntu : launch / start / stop / delete (sim ou Multipass)
+2. Workloads : manifest Deployment + Service + Ingress `{name}.openyard.local`
+3. Apply → pods Ready + URL HTTP via ingress-nginx
+4. VM Linux Ubuntu : launch / start / stop / delete (sim ou Multipass)
 
 ## Site & console
 
@@ -43,7 +46,7 @@ Le dossier `web/` est embarqué dans l’image Docker : sur kind,
 | GET | `/workloads/{name}` | Détail |
 | POST | `/workloads/{name}/apply` | Appliquer sur le cluster |
 | GET | `/workloads/{name}/status` | Statut pods (readyReplicas) |
-| GET | `/workloads/{name}/manifest` | YAML Deployment + Service |
+| GET | `/workloads/{name}/manifest` | YAML Deployment + Service + Ingress |
 | DELETE | `/workloads/{name}` | Retirer (et supprimer du cluster si appliqué) |
 | GET | `/compute/images` | Catalogue VM Linux (Ubuntu) |
 | POST | `/instances` | Lancer une VM Linux |
@@ -116,31 +119,35 @@ curl -s -H 'Host: openyard.local' http://127.0.0.1:8080/health
 kubectl -n openyard get pods,sa,role,resourcequota
 ```
 
-`/etc/hosts` : `127.0.0.1 openyard.local`
+`/etc/hosts` : `127.0.0.1 openyard.local` (et optionnellement `edge.openyard.local`)
 
-Appliquer une charge depuis l’API (dans le cluster) :
+Appliquer une charge depuis l’API (Ingress auto `{name}.openyard.local`) :
 
 ```bash
 curl -s -X POST http://127.0.0.1:8080/workloads \
   -H 'Host: openyard.local' -H 'content-type: application/json' \
-  -d '{"name":"edge","image":"hashicorp/http-echo:1.0","port":5678,"apply":true}'
-kubectl -n openyard get deploy,pods -l openyard.io/managed=true
+  -d '{"name":"edge","image":"nginxinc/nginx-unprivileged:1.27-alpine","port":8080,"apply":true}'
+kubectl -n openyard get deploy,ingress,pods -l openyard.io/managed=true
+curl -s -H 'Host: edge.openyard.local' http://127.0.0.1:8080/
+make e2e
 ```
+
+État persistant SQLite : `OPENYARD_DB` (défaut `data/openyard.db`, `/data/openyard.db` en cluster).
 
 Détruire : `make down`
 
 ## Sécurité
 
 - Pods non-root, `drop ALL`, seccomp `RuntimeDefault`
-- Role limité au namespace `openyard` (deployments, services, pods)
+- Role limité au namespace `openyard` (deployments, services, pods, ingresses)
 - ResourceQuota + LimitRange
 - NetworkPolicy : ingress depuis `ingress-nginx`, egress DNS + API Kubernetes
 - Token de ServiceAccount monté uniquement sur le plan de contrôle (pour apply)
 
 ## CI
 
-GitHub Actions : Ruff, Pytest, Kustomize + kubeconform, build Docker, Trivy,
-push GHCR sur `main`.
+GitHub Actions : Ruff, Pytest, Kustomize + kubeconform, **e2e kind**, build Docker,
+Trivy, push GHCR sur `main`.
 
 ## Make
 
@@ -149,5 +156,11 @@ push GHCR sur `main`.
 | `make lint` / `make test` | Qualité |
 | `make run` | API + site local sans cluster |
 | `make up` / `make down` | kind |
+| `make e2e` | smoke create/apply/ingress (cluster up) |
 | `make compose` | Docker Compose |
 | `make manifests` | `kustomize build` |
+
+## Limites connues
+
+- VM Linux `sim` = cycle de vie simulé ; Multipass = vraies Ubuntu hors pod kind
+- Pas multi-tenant / pas facturation — volontairement minimal
