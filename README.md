@@ -15,6 +15,17 @@ Plan de contrôle, démos, RBAC et quotas tournent sur **kind** — sans facture
 
 Docs : [Architecture](docs/ARCHITECTURE.md) · [Sécurité](docs/SECURITY.md) · [Contribuer](docs/CONTRIBUTING.md)
 
+## Architecture (aperçu)
+
+```mermaid
+flowchart LR
+  UI[Console / API] --> DB[(SQLite)]
+  UI --> K8s[Deploy + Svc + Ingress]
+  UI --> MP[Multipass / sim]
+```
+
+Détail : [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
 ## Idée
 
 Un cloud managé cache le passage conteneur → orchestration (et IaaS). OpenYard
