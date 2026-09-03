@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openyard-control
+  namespace: openyard
+  labels:
+    app.kubernetes.io/name: openyard-control
+data:
+  LOG_LEVEL: info
+  OPENYARD_NAMESPACE: openyard
