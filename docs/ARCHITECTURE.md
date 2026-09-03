@@ -54,3 +54,13 @@ sequenceDiagram
   K->>I: sync host name.openyard.local
   U->>I: GET Host name.openyard.local
 ```
+
+## Compute (VM Linux)
+
+| Driver | Où | Notes |
+| --- | --- | --- |
+| `sim` | Processus API | IP fictives `10.88.0.x`, idéal kind/CI |
+| `multipass` | Hôte | Vraies Ubuntu via Multipass |
+| `off` | — | Endpoints compute désactivés |
+
+En cluster kind, `OPENYARD_COMPUTE=sim` (pas de Multipass dans le pod).
