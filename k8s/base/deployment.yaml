@@ -69,4 +69,5 @@ spec:
         - name: tmp
           emptyDir: {}
         - name: data
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: openyard-data
