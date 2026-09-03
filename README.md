@@ -33,6 +33,8 @@ les rend lisibles :
 | `/` | Landing OpenYard |
 | `/console` | Projets + Workloads + VM Linux |
 
+![Aperçu console](docs/assets/console-preview.svg)
+
 ## Projets (multi-tenant)
 
 ```bash
