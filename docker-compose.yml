@@ -3,6 +3,9 @@ services:
     build: .
     ports:
       - "8000:8000"
+    environment:
+      OPENYARD_CLUSTER: "false"
+      OPENYARD_NAMESPACE: openyard
     read_only: true
     tmpfs:
       - /tmp

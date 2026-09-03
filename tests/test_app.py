@@ -1,14 +1,26 @@
+from __future__ import annotations
+
+from unittest.mock import patch
+
 from fastapi.testclient import TestClient
 
-from app.main import app
+from app.cluster import ClusterUnavailable, WorkloadRuntime
+from app.main import app, store
 
 client = TestClient(app)
+
+
+def setup_function() -> None:
+    for item in list(store.list()):
+        store.delete(item.name)
 
 
 def test_health() -> None:
     response = client.get("/health")
     assert response.status_code == 200
-    assert response.json()["status"] == "ok"
+    body = response.json()
+    assert body["status"] == "ok"
+    assert "cluster" in body
 
 
 def test_create_list_manifest_and_delete() -> None:
@@ -43,7 +55,7 @@ def test_create_list_manifest_and_delete() -> None:
     assert "kind: Service" in text
     assert "image: ghcr.io/curtis736/openyard:latest" in text
     assert "replicas: 2" in text
-    assert 'runAsNonRoot: true' in text or "runAsNonRoot: true" in text
+    assert "runAsNonRoot: true" in text
 
     conflict = client.post(
         "/workloads",
@@ -69,3 +81,69 @@ def test_metrics() -> None:
     response = client.get("/metrics")
     assert response.status_code == 200
     assert "openyard_up 1" in response.text
+    assert "openyard_pods_ready" in response.text
+
+
+def test_apply_updates_status() -> None:
+    created = client.post(
+        "/workloads",
+        json={
+            "name": "demo-job",
+            "image": "nginxinc/nginx-unprivileged:1.27-alpine",
+            "replicas": 1,
+            "port": 8080,
+        },
+    )
+    assert created.status_code == 201
+
+    runtime = WorkloadRuntime(
+        ready_replicas=1,
+        desired_replicas=1,
+        available=True,
+        message="MinimumReplicasAvailable",
+    )
+    with patch("app.main.apply_workload", return_value=runtime) as mocked:
+        applied = client.post("/workloads/demo-job/apply")
+    assert applied.status_code == 200
+    body = applied.json()
+    assert body["status"] == "ready"
+    assert body["ready_replicas"] == 1
+    mocked.assert_called_once()
+
+
+def test_apply_without_cluster_returns_503() -> None:
+    client.post(
+        "/workloads",
+        json={
+            "name": "orphan",
+            "image": "nginxinc/nginx-unprivileged:1.27-alpine",
+            "port": 8080,
+        },
+    )
+    with patch(
+        "app.main.apply_workload",
+        side_effect=ClusterUnavailable("aucun kubeconfig disponible"),
+    ):
+        response = client.post("/workloads/orphan/apply")
+    assert response.status_code == 503
+
+
+def test_create_with_apply_flag() -> None:
+    runtime = WorkloadRuntime(
+        ready_replicas=0,
+        desired_replicas=1,
+        available=False,
+        message="waiting for pods",
+    )
+    with patch("app.main.apply_workload", return_value=runtime):
+        response = client.post(
+            "/workloads",
+            json={
+                "name": "auto-apply",
+                "image": "hashicorp/http-echo:1.0",
+                "port": 5678,
+                "apply": True,
+            },
+        )
+    assert response.status_code == 201
+    assert response.json()["status"] == "deploying"

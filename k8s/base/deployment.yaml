@@ -18,7 +18,7 @@ spec:
         app.kubernetes.io/component: control-plane
     spec:
       serviceAccountName: openyard-control
-      automountServiceAccountToken: false
+      automountServiceAccountToken: true
       securityContext:
         runAsNonRoot: true
         runAsUser: 10001

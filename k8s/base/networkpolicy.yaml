@@ -21,6 +21,7 @@ spec:
         - protocol: TCP
           port: 8000
   egress:
+    # DNS
     - to:
         - namespaceSelector: {}
       ports:
@@ -28,3 +29,9 @@ spec:
           port: 53
         - protocol: TCP
           port: 53
+    # API Kubernetes (apply / status des workloads)
+    - ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 6443

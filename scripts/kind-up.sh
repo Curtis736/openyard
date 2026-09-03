@@ -41,3 +41,7 @@ kubectl -n openyard get svc
 echo
 echo "API : curl -s -H 'Host: openyard.local' http://127.0.0.1:8080/health"
 echo "Docs : http://openyard.local:8080/docs  (ajouter 127.0.0.1 openyard.local dans /etc/hosts)"
+echo
+echo "Exemple — enregistrer une charge et l'appliquer :"
+echo "  curl -s -X POST http://127.0.0.1:8080/workloads -H 'Host: openyard.local' -H 'content-type: application/json' \\"
+echo "    -d '{\"name\":\"edge\",\"image\":\"hashicorp/http-echo:1.0\",\"port\":5678,\"apply\":true}'"

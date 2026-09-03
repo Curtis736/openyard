@@ -12,6 +12,7 @@ class WorkloadCreate(BaseModel):
     port: int = Field(default=8080, ge=1, le=65535)
     cpu: str = Field(default="50m", pattern=r"^[0-9]+m?$")
     memory: str = Field(default="64Mi", pattern=r"^[0-9]+(Mi|Gi)$")
+    apply: bool = False
 
     @field_validator("image")
     @classmethod
@@ -32,8 +33,12 @@ class Workload(BaseModel):
     namespace: str
     created_at: datetime
     status: str = "registered"
+    ready_replicas: int = 0
+    message: str = ""
 
 
 class WorkloadStats(BaseModel):
     workloads: int
     pods_desired: int
+    pods_ready: int = 0
+    cluster_mode: bool = False

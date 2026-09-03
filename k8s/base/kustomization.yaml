@@ -4,9 +4,12 @@ namespace: openyard
 resources:
   - namespace.yaml
   - serviceaccount.yaml
+  - rbac.yaml
   - configmap.yaml
+  - quota.yaml
   - deployment.yaml
   - service.yaml
+  - pdb.yaml
   - ingress.yaml
   - networkpolicy.yaml
   - demo-web.yaml

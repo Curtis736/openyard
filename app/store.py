@@ -40,13 +40,37 @@ class WorkloadStore:
         with self._lock:
             return self._items.get(name)
 
-    def delete(self, name: str) -> bool:
+    def delete(self, name: str) -> Workload | None:
         with self._lock:
-            return self._items.pop(name, None) is not None
+            return self._items.pop(name, None)
 
-    def stats(self) -> WorkloadStats:
+    def set_runtime(
+        self,
+        name: str,
+        *,
+        status: str,
+        ready_replicas: int = 0,
+        message: str = "",
+    ) -> Workload | None:
+        with self._lock:
+            current = self._items.get(name)
+            if current is None:
+                return None
+            updated = current.model_copy(
+                update={
+                    "status": status,
+                    "ready_replicas": ready_replicas,
+                    "message": message,
+                }
+            )
+            self._items[name] = updated
+            return updated
+
+    def stats(self, *, cluster_mode: bool = False) -> WorkloadStats:
         with self._lock:
             return WorkloadStats(
                 workloads=len(self._items),
                 pods_desired=sum(item.replicas for item in self._items.values()),
+                pods_ready=sum(item.ready_replicas for item in self._items.values()),
+                cluster_mode=cluster_mode,
             )
