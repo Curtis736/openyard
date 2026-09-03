@@ -18,3 +18,21 @@ flowchart LR
   API -->|workloads apply| K8s
   API -->|instances| MP
 ```
+
+## Multi-tenant
+
+```mermaid
+flowchart TB
+  POST[POST /projects]
+  Store[SQLite project + oy_ key]
+  NS[Namespace oy-name]
+  RQ[ResourceQuota]
+
+  POST --> Store
+  POST --> NS
+  POST --> RQ
+  Store -->|X-API-Key| APIScope[Workloads / instances scopés]
+```
+
+- Projet `default` → namespace `openyard` (anonyme si pas d’admin key)
+- Autres projets → `oy-{name}` + clé `oy_…`
