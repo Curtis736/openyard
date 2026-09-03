@@ -186,7 +186,9 @@ Détruire : `make down`
 - ResourceQuota + LimitRange
 - NetworkPolicy : ingress depuis `ingress-nginx`, egress DNS + API Kubernetes
 - Token de ServiceAccount monté uniquement sur le plan de contrôle (pour apply)
-- Auth API optionnelle : `OPENYARD_API_KEY` + header `X-API-Key`
+- Auth API optionnelle : Secret / env `OPENYARD_API_KEY` + header `X-API-Key`
+- Allowlist d’images workloads + refus de `:latest`
+- SQLite sur PVC Kubernetes (`openyard-data`)
 
 ## CI
 
