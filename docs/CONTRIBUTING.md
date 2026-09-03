@@ -13,3 +13,10 @@ make run
 ```
 
 Console : http://127.0.0.1:8000/console
+
+## Checklist PR
+
+- [ ] `make lint` et `make test` OK
+- [ ] Manifests : `make manifests` / kubeconform si YAML K8s
+- [ ] Doc à jour si comportement user-facing
+- [ ] Pas de secret réel commité
