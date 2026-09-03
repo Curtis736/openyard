@@ -79,8 +79,16 @@ kubectl -n openyard get ingress "${NAME}" -o jsonpath='{.spec.rules[0].host}{"\n
 grep -qx "${NAME}.openyard.local" /tmp/openyard-ingress-host.txt
 
 echo "== http via ingress =="
-code="$(curl -sS -o /tmp/openyard-http.out -w "%{http_code}" -H "Host: ${NAME}.openyard.local" "http://127.0.0.1:8080/")"
-echo "http=${code}"
+deadline=$((SECONDS + TIMEOUT_S))
+code="000"
+while (( SECONDS < deadline )); do
+  code="$(curl -sS -o /tmp/openyard-http.out -w "%{http_code}" -H "Host: ${NAME}.openyard.local" "http://127.0.0.1:8080/" || true)"
+  echo "http=${code}"
+  if [[ "$code" == "200" ]]; then
+    break
+  fi
+  sleep 3
+done
 if [[ "$code" != "200" ]]; then
   cat /tmp/openyard-http.out
   dump_debug

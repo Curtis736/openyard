@@ -108,8 +108,6 @@ def render_ingress(workload: Workload) -> str:
           labels:
             app.kubernetes.io/name: {workload.name}
             openyard.io/managed: "true"
-          annotations:
-            nginx.ingress.kubernetes.io/rewrite-target: /
         spec:
           ingressClassName: nginx
           rules:
