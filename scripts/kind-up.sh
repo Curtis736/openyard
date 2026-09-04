@@ -27,6 +27,10 @@ fi
 docker build -t "$IMAGE_TAG" .
 kind load docker-image "$IMAGE_TAG" --name "$CLUSTER"
 
+# Namespace + Secret avant apply (API key optionnelle via OPENYARD_API_KEY)
+kubectl get ns openyard >/dev/null 2>&1 || kubectl create namespace openyard
+./scripts/ensure-admin-secret.sh
+
 kubectl apply -k k8s/overlays/kind
 kubectl -n openyard rollout status deployment/openyard-control --timeout=120s
 kubectl -n openyard rollout status deployment/demo-web --timeout=120s
