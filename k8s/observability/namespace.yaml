@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openyard-obs
+  labels:
+    app.kubernetes.io/part-of: openyard
+    app.kubernetes.io/component: observability
