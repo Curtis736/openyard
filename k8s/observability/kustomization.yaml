@@ -8,6 +8,7 @@ resources:
   - prometheus-service.yaml
   - prometheus-ingress.yaml
   - grafana-datasources.yaml
+  - grafana-dashboard-provider.yaml
 labels:
   - pairs:
       app.kubernetes.io/part-of: openyard
