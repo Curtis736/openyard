@@ -215,6 +215,7 @@ Trivy, push GHCR sur `main`.
 | `make e2e` | smoke create/apply/ingress (cluster up) |
 | `make compose` | Docker Compose |
 | `make manifests` | `kustomize build` |
+| `make secret` | Secret admin (`KEY=` / `OPENYARD_API_KEY`) |
 
 ## Limites connues
 
