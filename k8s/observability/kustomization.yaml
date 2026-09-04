@@ -4,6 +4,7 @@ namespace: openyard-obs
 resources:
   - namespace.yaml
   - prometheus-config.yaml
+  - prometheus-deployment.yaml
 labels:
   - pairs:
       app.kubernetes.io/part-of: openyard
