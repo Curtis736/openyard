@@ -4,6 +4,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.image_policy import validate_workload_image
 from app.linux_images import list_linux_images, resolve_linux_image
 
 
@@ -48,11 +49,11 @@ class WorkloadCreate(BaseModel):
 
     @field_validator("image")
     @classmethod
-    def image_not_blank(cls, value: str) -> str:
-        cleaned = value.strip()
-        if not cleaned or " " in cleaned:
-            raise ValueError("image Docker invalide")
-        return cleaned
+    def image_allowed(cls, value: str) -> str:
+        try:
+            return validate_workload_image(value)
+        except ValueError as exc:
+            raise ValueError(str(exc)) from exc
 
 
 class Workload(BaseModel):
