@@ -94,8 +94,17 @@ jobs:
       - name: Deploy OpenYard
         run: |
           set -euo pipefail
+          kubectl get ns openyard >/dev/null 2>&1 || kubectl create namespace openyard
+          ./scripts/ensure-admin-secret.sh
           kubectl apply -k k8s/overlays/kind
           kubectl -n openyard rollout status deployment/openyard-control --timeout=180s
+
+      - name: Deploy observability
+        run: |
+          set -euo pipefail
+          kubectl apply -k k8s/observability
+          kubectl -n openyard-obs rollout status deploy/prometheus --timeout=180s
+          kubectl -n openyard-obs rollout status deploy/grafana --timeout=180s
 
       - name: Smoke e2e
         run: ./scripts/e2e-kind.sh
