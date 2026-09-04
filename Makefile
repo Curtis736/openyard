@@ -43,3 +43,9 @@ manifests:
 
 secret:
 	OPENYARD_API_KEY="$${KEY:-$${OPENYARD_API_KEY:-}}" ./scripts/ensure-admin-secret.sh
+
+obs:
+	./scripts/obs-up.sh
+
+e2e-tenant:
+	./scripts/e2e-tenant.sh
