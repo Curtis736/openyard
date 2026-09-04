@@ -86,7 +86,17 @@ curl -s -H "X-API-Key: oy_…" http://127.0.0.1:8000/workloads
 | POST | `/instances/{name}/start` | Démarrer |
 | DELETE | `/instances/{name}` | Supprimer |
 
-Images acceptées : `ubuntu-22.04`, `ubuntu-24.04`, `ubuntu-lts` (Linux uniquement).
+Images VM acceptées : `ubuntu-22.04`, `ubuntu-24.04`, `ubuntu-lts` (Linux uniquement).
+
+### Allowlist images workloads
+
+Variable `OPENYARD_ALLOWED_IMAGE_PREFIXES` (liste CSV). Défaut :
+
+`nginxinc/`, `nginx:`, `hashicorp/`, `ghcr.io/curtis736/`, `registry.k8s.io/`
+
+- Tag **obligatoire** ; `:latest` **refusé**
+- Exemple refusé : `evil.example/app:1.0` ou `nginxinc/nginx-unprivileged:latest`
+
 
 ### Compute drivers
 
