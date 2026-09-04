@@ -7,6 +7,7 @@ resources:
   - prometheus-deployment.yaml
   - prometheus-service.yaml
   - prometheus-ingress.yaml
+  - grafana-datasources.yaml
 labels:
   - pairs:
       app.kubernetes.io/part-of: openyard
