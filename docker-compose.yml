@@ -8,6 +8,7 @@ services:
       OPENYARD_NAMESPACE: openyard
       OPENYARD_DB: /data/openyard.db
       OPENYARD_COMPUTE: sim
+      # Optionnel : OPENYARD_API_KEY: change-me
     volumes:
       - openyard-data:/data
     read_only: true
