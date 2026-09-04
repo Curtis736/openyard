@@ -23,3 +23,12 @@ de production. Ce document décrit les contrôles présents et les limites.
 
 Ouvre une issue GitHub privée ou un PR décrivant le scénario.
 Pas de bug bounty — corrections bienvenues.
+
+## Secrets
+
+| Secret | Usage |
+| --- | --- |
+| `OPENYARD_API_KEY` (env / K8s Secret) | Admin global |
+| `oy_…` (SQLite) | Scope projet |
+
+Ne jamais committer une vraie clé. Le manifeste de base ship une clé vide.
