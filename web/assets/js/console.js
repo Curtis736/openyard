@@ -557,6 +557,16 @@
     if (e.key === "Escape") closeModal();
   });
 
+  const imageInput = document.getElementById("image");
+  if (imageInput && !document.getElementById("image-policy-hint")) {
+    const hint = document.createElement("p");
+    hint.id = "image-policy-hint";
+    hint.className = "hint";
+    hint.textContent =
+      "Images : préfixes allowlist (nginxinc/, nginx:, …) — tag requis, :latest refusé.";
+    imageInput.insertAdjacentElement("afterend", hint);
+  }
+
   refresh()
     .then(startPolling)
     .catch((err) => {
