@@ -114,6 +114,15 @@ make run
 curl -s -H "X-API-Key: change-me" http://127.0.0.1:8000/workloads
 ```
 
+Sur Kubernetes la clé vit dans un **Secret** `openyard-control` (pas le ConfigMap) :
+
+```bash
+make secret KEY='change-me'
+kubectl -n openyard rollout restart deploy/openyard-control
+```
+
+Kind / CI : Secret présent avec clé **vide** → auth admin off (e2e inchangé).
+
 Dans la console : champ **API key** (stocké en localStorage).
 
 ## Local (API + site)
