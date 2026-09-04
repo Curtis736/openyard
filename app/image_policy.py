@@ -51,3 +51,22 @@ def rejects_latest(image: str) -> str | None:
     if tag.lower() == "latest":
         return "tag :latest interdit"
     return None
+
+
+def matches_allowlist(image: str, prefixes: tuple[str, ...] | None = None) -> bool:
+    allowed = prefixes if prefixes is not None else allowed_prefixes()
+    return any(image.startswith(prefix) for prefix in allowed)
+
+
+def validate_workload_image(image: str) -> str:
+    cleaned = image.strip()
+    if not cleaned or " " in cleaned:
+        raise ImagePolicyError("image Docker invalide")
+    if reason := rejects_latest(cleaned):
+        raise ImagePolicyError(reason)
+    if not matches_allowlist(cleaned):
+        raise ImagePolicyError(
+            "image hors allowlist ; préfixes autorisés : "
+            + ", ".join(allowed_prefixes())
+        )
+    return cleaned
