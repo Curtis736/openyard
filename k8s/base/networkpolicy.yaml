@@ -20,6 +20,9 @@ spec:
         - namespaceSelector:
             matchLabels:
               app.kubernetes.io/name: ingress-nginx
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: openyard-obs
       ports:
         - protocol: TCP
           port: 8000
