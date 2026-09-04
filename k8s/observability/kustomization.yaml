@@ -10,6 +10,7 @@ resources:
   - grafana-datasources.yaml
   - grafana-dashboard-provider.yaml
   - grafana-dashboard.yaml
+  - grafana-deployment.yaml
 labels:
   - pairs:
       app.kubernetes.io/part-of: openyard
