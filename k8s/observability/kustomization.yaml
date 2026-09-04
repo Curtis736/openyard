@@ -6,6 +6,7 @@ resources:
   - prometheus-config.yaml
   - prometheus-deployment.yaml
   - prometheus-service.yaml
+  - prometheus-ingress.yaml
 labels:
   - pairs:
       app.kubernetes.io/part-of: openyard
