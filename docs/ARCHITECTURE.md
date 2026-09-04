@@ -77,6 +77,10 @@ Sans PVC, un `emptyDir` perdrait projets / workloads au restart du pod.
 
 ## Supply chain (images)
 
-Les workloads ne peuvent tirer que des images dont le nom matche
-`OPENYARD_ALLOWED_IMAGE_PREFIXES`. Le tag `:latest` (ou l’absence de tag)
-est refusé.
+Module `app/image_policy.py` :
+
+1. Tag obligatoire, `:latest` refusé
+2. Préfixe dans `OPENYARD_ALLOWED_IMAGE_PREFIXES` (CSV)
+3. Validation au `WorkloadCreate` (422 si refus)
+
+Défauts : `nginxinc/`, `nginx:`, `hashicorp/`, `ghcr.io/curtis736/`, `registry.k8s.io/`.
