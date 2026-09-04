@@ -9,6 +9,7 @@ services:
       OPENYARD_DB: /data/openyard.db
       OPENYARD_COMPUTE: sim
       # Optionnel : OPENYARD_API_KEY: change-me
+      # OPENYARD_ALLOWED_IMAGE_PREFIXES: nginxinc/,hashicorp/
     volumes:
       - openyard-data:/data
     read_only: true
