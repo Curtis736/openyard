@@ -182,7 +182,7 @@ curl -s -H 'Host: openyard.local' http://127.0.0.1:8080/health
 kubectl -n openyard get pods,sa,role,resourcequota
 ```
 
-`/etc/hosts` : `127.0.0.1 openyard.local` (et optionnellement `edge.openyard.local`)
+`/etc/hosts` : `127.0.0.1 openyard.local prometheus.openyard.local grafana.openyard.local`
 
 Appliquer une charge depuis l’API (Ingress auto `{name}.openyard.local`) :
 
