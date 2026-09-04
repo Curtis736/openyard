@@ -66,7 +66,7 @@ curl -s -H "X-API-Key: oy_…" http://127.0.0.1:8000/workloads
 | Méthode | Chemin | Description |
 | --- | --- | --- |
 | GET | `/health` | Liveness + mode cluster |
-| GET | `/metrics` | Prometheus |
+| GET | `/metrics` | Prometheus (scrapé par `openyard-obs`) |
 | GET | `/stats` | Workloads / pods / projets (scopé) |
 | POST | `/projects` | Créer un tenant (clé API renvoyée) |
 | GET | `/projects` | Lister (sans secrets) |
