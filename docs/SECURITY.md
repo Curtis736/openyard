@@ -32,3 +32,9 @@ Pas de bug bounty — corrections bienvenues.
 | `oy_…` (SQLite) | Scope projet |
 
 Ne jamais committer une vraie clé. Le manifeste de base ship une clé vide.
+
+## Images workloads
+
+OpenYard n’est pas un admission controller cluster-wide : la garde est
+**au plan de contrôle** avant `apply`. Contourneable avec kubectl direct —
+volontaire pour un labo kind.
