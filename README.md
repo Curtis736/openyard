@@ -227,6 +227,8 @@ Trivy, push GHCR sur `main`.
 | `make compose` | Docker Compose |
 | `make manifests` | `kustomize build` |
 | `make secret` | Secret admin (`KEY=` / `OPENYARD_API_KEY`) |
+| `make obs` | Prometheus + Grafana |
+| `make e2e-tenant` | Smoke multi-tenant `oy-*` |
 
 ## Limites connues
 
