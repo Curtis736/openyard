@@ -84,3 +84,17 @@ Module `app/image_policy.py` :
 3. Validation au `WorkloadCreate` (422 si refus)
 
 Défauts : `nginxinc/`, `nginx:`, `hashicorp/`, `ghcr.io/curtis736/`, `registry.k8s.io/`.
+
+## Observabilité
+
+```mermaid
+flowchart LR
+  OY[openyard-control /metrics]
+  Prom[Prometheus]
+  Graf[Grafana]
+
+  Prom -->|scrape 15s| OY
+  Graf -->|datasource| Prom
+```
+
+Manifests : `k8s/observability/`. Voir [observability.md](observability.md).
