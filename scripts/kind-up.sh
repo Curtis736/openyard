@@ -36,6 +36,8 @@ kubectl -n openyard rollout status deployment/openyard-control --timeout=120s
 kubectl -n openyard rollout status deployment/demo-web --timeout=120s
 kubectl -n openyard rollout status deployment/demo-echo --timeout=120s
 
+./scripts/obs-up.sh
+
 echo
 echo "Pods :"
 kubectl -n openyard get pods -o wide
