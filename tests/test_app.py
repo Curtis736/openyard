@@ -122,7 +122,7 @@ def test_create_list_manifest_and_delete() -> None:
         "/workloads",
         json={
             "name": "edge-api",
-            "image": "ghcr.io/curtis736/openyard:latest",
+            "image": "ghcr.io/curtis736/openyard:1.0.0",
             "replicas": 2,
             "port": 8000,
         },
@@ -151,7 +151,7 @@ def test_create_list_manifest_and_delete() -> None:
     assert "kind: Service" in text
     assert "kind: Ingress" in text
     assert "edge-api.openyard.local" in text
-    assert "image: ghcr.io/curtis736/openyard:latest" in text
+    assert "image: ghcr.io/curtis736/openyard:1.0.0" in text
     assert "replicas: 2" in text
     assert "runAsNonRoot: true" in text
 
