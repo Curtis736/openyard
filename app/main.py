@@ -45,6 +45,7 @@ from app.models import (
     ProjectPublic,
     Workload,
     WorkloadCreate,
+    WorkloadEventOut,
     WorkloadStats,
     catalog_payload,
 )
