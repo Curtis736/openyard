@@ -103,3 +103,21 @@ Manifests : `k8s/observability/`. Voir [observability.md](observability.md).
 
 `scripts/e2e-tenant.sh` crée un projet, applique un workload avec la clé `oy_…`,
 vérifie l’Ingress dans `oy-{projet}`, puis nettoie.
+
+## Console → cluster (events / logs)
+
+```mermaid
+sequenceDiagram
+  participant C as Console
+  participant A as API
+  participant K as kube-apiserver
+
+  C->>A: GET /workloads/x/events
+  A->>K: list events (deploy + pods)
+  K-->>A: EventList
+  A-->>C: JSON
+  C->>A: GET /workloads/x/logs
+  A->>K: pods/log
+  K-->>A: text
+  A-->>C: text/plain
+```
