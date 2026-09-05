@@ -7,5 +7,6 @@
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Dev local et PR |
 | [console.md](console.md) | Console web |
 | [observability.md](observability.md) | Prometheus + Grafana |
+| [e2e.md](e2e.md) | Smokes kind + multi-tenant |
 
 Points ops à connaître : **PVC** `openyard-data`, **Secret** admin, **allowlist** d’images (voir Architecture / Sécurité).
