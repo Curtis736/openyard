@@ -5,3 +5,4 @@ metadata:
   labels:
     app.kubernetes.io/part-of: openyard
     app.kubernetes.io/component: observability
+    # scrapes openyard-control
