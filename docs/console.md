@@ -25,3 +25,12 @@ flowchart TB
   Nav --> Tabs --> Main
   Poll --> Main
 ```
+
+## Observabilité workload
+
+Sur chaque ligne workload :
+
+- **Events** → `GET /workloads/{name}/events`
+- **Logs** → `GET /workloads/{name}/logs?tail=200`
+
+Affichés dans le modal existant (texte brut).
