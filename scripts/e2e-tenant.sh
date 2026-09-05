@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # E2E multi-tenant : projet oy-* + clé API + workload + Ingress tenant.
+# Prouve ensure_project_namespace + scoping store (pas seulement le ns default).
 set -euo pipefail
 
 HOST_HEADER="${HOST_HEADER:-openyard.local}"
