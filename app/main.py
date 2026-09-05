@@ -24,6 +24,7 @@ from app.cluster import (
     delete_from_cluster,
     read_workload_status,
 )
+from app.observe import list_workload_events, read_workload_logs
 from app.compute import (
     ComputeError,
     compute_driver_name,
