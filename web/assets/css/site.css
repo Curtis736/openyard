@@ -772,6 +772,10 @@ td .image {
 }
 
 .modal pre {
+  max-height: min(70vh, 520px);
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
   margin: 0;
   padding: 1rem;
   font-family: var(--mono);
