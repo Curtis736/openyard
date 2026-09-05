@@ -20,3 +20,10 @@ make e2e-tenant
 | `NAME` | `tenant-web` / `e2e-web` | workload |
 | `BASE_URL` | `http://127.0.0.1:8080` | entrée ingress |
 | `TIMEOUT_S` | `180` | timeouts |
+
+## Ordre CI
+
+1. Deploy OpenYard (+ Secret vide)
+2. Deploy `openyard-obs`
+3. `e2e-kind.sh`
+4. `e2e-tenant.sh`
