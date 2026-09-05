@@ -109,6 +109,9 @@ jobs:
       - name: Smoke e2e
         run: ./scripts/e2e-kind.sh
 
+      - name: Smoke e2e multi-tenant
+        run: ./scripts/e2e-tenant.sh
+
   docker:
     name: Build, scan, push
     needs: [lint-test, kustomize]
