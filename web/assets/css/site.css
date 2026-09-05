@@ -813,3 +813,6 @@ td .image {
     display: none;
   }
 }
+
+/* workload events/logs modal */
+.modal pre.obs { font-size: 0.85rem; }
