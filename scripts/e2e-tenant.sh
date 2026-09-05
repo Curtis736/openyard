@@ -41,7 +41,7 @@ echo "== tenant project =="
 CREATE_CODE="$(api POST /projects -d "{\"name\":\"${PROJECT}\",\"pods_quota\":5,\"cpu_quota\":\"1\",\"memory_quota\":\"1Gi\"}" \
   -o /tmp/openyard-tenant-project.json -w "%{http_code}")"
 if [[ "$CREATE_CODE" == "409" ]]; then
-  echo "projet ${PROJECT} existe déjà — définis PROJECT=unique et relance" >&2
+  echo "projet ${PROJECT} existe déjà — relance avec PROJECT=e2et$(date +%s)" >&2
   cat /tmp/openyard-tenant-project.json >&2 || true
   exit 1
 fi
