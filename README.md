@@ -193,6 +193,7 @@ curl -s -X POST http://127.0.0.1:8080/workloads \
 kubectl -n openyard get deploy,ingress,pods -l openyard.io/managed=true
 curl -s -H 'Host: edge.openyard.local' http://127.0.0.1:8080/
 make e2e
+make e2e-tenant   # projet oy-* + X-API-Key
 ```
 
 État persistant SQLite : `OPENYARD_DB` (défaut `data/openyard.db`, `/data/openyard.db` en cluster).
