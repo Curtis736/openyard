@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Smoke e2e : create → apply → status ready + Ingress présent.
+# Smoke e2e (default) : create → apply → status ready + Ingress présent.
+# Voir aussi scripts/e2e-tenant.sh pour oy-*.
 set -euo pipefail
 
 HOST_HEADER="${HOST_HEADER:-openyard.local}"
