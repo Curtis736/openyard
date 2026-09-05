@@ -9,7 +9,7 @@
 - **Projets (tenants)** : namespace `oy-*`, quotas pods/CPU/RAM, clé API
 - **VM Linux** : Ubuntu 22.04 / 24.04 (driver `sim` ou **Multipass**)
 - **Persistance** : SQLite (`OPENYARD_DB`)
-- **CI** : lint, tests, kubeconform, Trivy, **e2e kind** (+ tenant)
+- **CI** : lint, tests, kubeconform, Trivy, **e2e kind** + **e2e tenant**
 - **Observabilité** : Prometheus + Grafana (`openyard-obs`)
 
 Plan de contrôle, démos, RBAC et quotas tournent sur **kind** — sans facture cloud.
