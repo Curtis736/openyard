@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from unittest.mock import patch
+from datetime import UTC, datetime
 
 from fastapi.testclient import TestClient
 
@@ -9,7 +8,6 @@ from app.cluster import ClusterUnavailable
 from app.main import app
 from app.models import Workload
 from app.observe import WorkloadEvent
-
 
 client = TestClient(app)
 
@@ -24,7 +22,7 @@ def _wl() -> Workload:
         cpu="50m",
         memory="64Mi",
         namespace="openyard",
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
 
 
@@ -62,7 +60,9 @@ def test_logs_ok(monkeypatch) -> None:
 
     monkeypatch.setattr(main_mod, "get_workload", lambda name, identity: _wl())
     monkeypatch.setattr(
-        main_mod, "read_workload_logs", lambda ns, name, tail_lines=200: "# pod=x\nhello\n"
+        main_mod,
+        "read_workload_logs",
+        lambda ns, name, tail_lines=200: "# pod=x\nhello\n",
     )
     res = client.get("/workloads/demo/logs")
     assert res.status_code == 200
@@ -79,4 +79,17 @@ def test_events_unavailable(monkeypatch) -> None:
         lambda *a, **k: (_ for _ in ()).throw(ClusterUnavailable("off")),
     )
     res = client.get("/workloads/demo/events")
+    assert res.status_code == 503
+
+
+def test_logs_unavailable(monkeypatch) -> None:
+    from app import main as main_mod
+
+    monkeypatch.setattr(main_mod, "get_workload", lambda name, identity: _wl())
+    monkeypatch.setattr(
+        main_mod,
+        "read_workload_logs",
+        lambda *a, **k: (_ for _ in ()).throw(ClusterUnavailable("off")),
+    )
+    res = client.get("/workloads/demo/logs")
     assert res.status_code == 503
