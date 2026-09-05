@@ -104,3 +104,39 @@ def list_workload_events(namespace: str, name: str, limit: int = 40) -> list[Wor
         seen.add(key)
         unique.append(item)
     return unique[:limit]
+
+
+def read_workload_logs(namespace: str, name: str, tail_lines: int = 200) -> str:
+    from app.cluster import ClusterError
+
+    _apps, core, _net, client = _require_cluster()
+    try:
+        pods = core.list_namespaced_pod(
+            namespace, label_selector=f"app.kubernetes.io/name={name}"
+        )
+    except client.exceptions.ApiException as exc:
+        raise ClusterError(str(exc)) from exc
+
+    if not pods.items:
+        return "(aucun pod pour ce workload)\n"
+
+    # prefer ready pod
+    chosen = pods.items[0]
+    for pod in pods.items:
+        conds = pod.status.conditions or []
+        if any(c.type == "Ready" and c.status == "True" for c in conds):
+            chosen = pod
+            break
+
+    pod_name = chosen.metadata.name
+    try:
+        text = core.read_namespaced_pod_log(
+            name=pod_name,
+            namespace=namespace,
+            tail_lines=tail_lines,
+            timestamps=True,
+        )
+    except client.exceptions.ApiException as exc:
+        raise ClusterError(str(exc)) from exc
+    header = f"# pod={pod_name} namespace={namespace} tail={tail_lines}\n"
+    return header + (text or "")
