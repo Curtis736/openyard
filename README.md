@@ -43,7 +43,7 @@ les rend lisibles :
 | URL | Contenu |
 | --- | --- |
 | `/` | Landing OpenYard |
-| `/console` | Projets + Workloads + VM Linux |
+| `/console` | Projets + Workloads + VM Linux (Events / Logs) |
 
 ![Aperçu console](docs/assets/console-preview.svg)
 
@@ -216,8 +216,8 @@ Détruire : `make down`
 
 ## CI
 
-GitHub Actions : Ruff, Pytest, Kustomize + kubeconform, **e2e kind**, build Docker,
-Trivy, push GHCR sur `main`.
+GitHub Actions : Ruff, Pytest, Kustomize + kubeconform (base, kind, **observability**),
+**e2e kind** + **e2e tenant**, build Docker, Trivy, push GHCR sur `main`.
 
 ## Make
 
