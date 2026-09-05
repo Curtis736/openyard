@@ -98,3 +98,8 @@ flowchart LR
 ```
 
 Manifests : `k8s/observability/`. Voir [observability.md](observability.md).
+
+## Preuve CI multi-tenant
+
+`scripts/e2e-tenant.sh` crée un projet, applique un workload avec la clé `oy_…`,
+vérifie l’Ingress dans `oy-{projet}`, puis nettoie.
