@@ -1,4 +1,7 @@
-"""Lecture Events / logs pods pour la console OpenYard."""
+"""Lecture Events / logs pods pour la console OpenYard.
+
+Garde-fou RBAC : pods/log + events en lecture seule.
+"""
 
 from __future__ import annotations
 
@@ -25,6 +28,8 @@ def _require_cluster():
 
 
 def list_workload_events(namespace: str, name: str, limit: int = 40) -> list[WorkloadEvent]:
+    """Events du Deployment + pods labellisés app.kubernetes.io/name."""
+    limit = max(1, min(limit, 200))
     from app.cluster import ClusterError
 
     _apps, core, _net, client = _require_cluster()
@@ -107,6 +112,8 @@ def list_workload_events(namespace: str, name: str, limit: int = 40) -> list[Wor
 
 
 def read_workload_logs(namespace: str, name: str, tail_lines: int = 200) -> str:
+    """Logs du premier pod Ready (sinon le premier pod)."""
+    tail_lines = max(1, min(tail_lines, 5000))
     from app.cluster import ClusterError
 
     _apps, core, _net, client = _require_cluster()
