@@ -9,7 +9,7 @@ rules:
     resources: ["namespaces"]
     verbs: ["get", "list", "create", "delete"]
   - apiGroups: [""]
-    resources: ["resourcequotas", "services", "pods"]
+    resources: ["resourcequotas", "services", "pods", "pods/log", "events"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: ["apps"]
     resources: ["deployments"]
