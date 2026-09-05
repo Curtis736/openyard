@@ -6,7 +6,7 @@ help:
 	@echo "run        API locale (sans cluster)"
 	@echo "compose    docker compose up --build"
 	@echo "up         cluster kind + apply"
-	@echo "e2e        smoke e2e (cluster déjà up)"
+	@echo "e2e        smoke e2e default ns (cluster déjà up)"
 	@echo "down       détruit le cluster kind"
 	@echo "build      image Docker locale"
 	@echo "manifests  kustomize build overlays/kind"
