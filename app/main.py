@@ -445,6 +445,28 @@ def workload_manifest(
     return PlainTextResponse(render_bundle(workload), media_type="application/yaml")
 
 
+
+@app.get("/workloads/{name}/events", response_model=list[WorkloadEventOut], tags=["workloads"])
+def workload_events(name: str, identity: IdentityDep) -> list[WorkloadEventOut]:
+    workload = get_workload(name, identity)
+    try:
+        events = list_workload_events(workload.namespace, workload.name)
+    except (ClusterUnavailable, ClusterError) as exc:
+        raise _cluster_http(exc) from exc
+    return [WorkloadEventOut(**e.__dict__) for e in events]
+
+
+@app.get("/workloads/{name}/logs", response_class=PlainTextResponse, tags=["workloads"])
+def workload_logs(name: str, identity: IdentityDep, tail: int = 200) -> PlainTextResponse:
+    workload = get_workload(name, identity)
+    tail = max(1, min(tail, 5000))
+    try:
+        text = read_workload_logs(workload.namespace, workload.name, tail_lines=tail)
+    except (ClusterUnavailable, ClusterError) as exc:
+        raise _cluster_http(exc) from exc
+    return PlainTextResponse(text, media_type="text/plain; charset=utf-8")
+
+
 @app.get("/compute/images", response_model=list[LinuxImageInfo], tags=["compute"])
 def linux_images_catalog() -> list[LinuxImageInfo]:
     return catalog_payload()
