@@ -38,3 +38,9 @@ Ne jamais committer une vraie clé. Le manifeste de base ship une clé vide.
 OpenYard n’est pas un admission controller cluster-wide : la garde est
 **au plan de contrôle** avant `apply`. Contourneable avec kubectl direct —
 volontaire pour un labo kind.
+
+## Observabilité
+
+- Prometheus scrape `/metrics` (public) depuis `openyard-obs`
+- Grafana démo : anon Viewer + admin/openyard (labo uniquement)
+- `pods/log` et `events` : lecture via le plan de contrôle authentifié
