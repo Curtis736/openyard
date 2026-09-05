@@ -78,6 +78,8 @@ curl -s -H "X-API-Key: oy_…" http://127.0.0.1:8000/workloads
 | POST | `/workloads/{name}/apply` | Appliquer sur le cluster |
 | GET | `/workloads/{name}/status` | Statut pods (readyReplicas) |
 | GET | `/workloads/{name}/manifest` | YAML Deployment + Service + Ingress |
+| GET | `/workloads/{name}/events` | Events Kubernetes du workload |
+| GET | `/workloads/{name}/logs` | Logs du pod (tail) |
 | DELETE | `/workloads/{name}` | Retirer (et supprimer du cluster si appliqué) |
 | GET | `/compute/images` | Catalogue VM Linux (Ubuntu) |
 | POST | `/instances` | Lancer une VM Linux |
