@@ -44,3 +44,8 @@ volontaire pour un labo kind.
 - Prometheus scrape `/metrics` (public) depuis `openyard-obs`
 - Grafana démo : anon Viewer + admin/openyard (labo uniquement)
 - `pods/log` et `events` : lecture via le plan de contrôle authentifié
+
+## Multi-tenant e2e
+
+Le job CI tenant valide le scoping namespace + clé `oy_…`.
+Ce n’est pas une preuve d’isolement réseau fort (NetworkPolicy kind off).
