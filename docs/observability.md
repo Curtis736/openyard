@@ -23,3 +23,8 @@ curl -s -H 'Host: prometheus.openyard.local' \
   'http://127.0.0.1:8080/api/v1/targets' | head
 curl -s -H 'Host: openyard.local' http://127.0.0.1:8080/metrics | head
 ```
+
+## Compte Grafana
+
+- Anonyme : Viewer
+- Admin labo : `admin` / `openyard`
