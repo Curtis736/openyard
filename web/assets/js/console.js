@@ -493,6 +493,18 @@
       } else if (action === "manifest") {
         const yaml = await fetchText(`/workloads/${encodeURIComponent(name)}/manifest`);
         openModal(`Manifest — ${name}`, yaml);
+      } else if (action === "events") {
+        const events = await api(`/workloads/${encodeURIComponent(name)}/events`);
+        const lines = (events || [])
+          .map(
+            (e) =>
+              `${e.last_timestamp || "-"}\t${e.type}\t${e.reason}\t${e.involved_kind}/${e.involved_name}\t${e.message}`
+          )
+          .join("\n");
+        openModal(`Events — ${name}`, lines || "(aucun event)");
+      } else if (action === "logs") {
+        const logs = await fetchText(`/workloads/${encodeURIComponent(name)}/logs?tail=200`);
+        openModal(`Logs — ${name}`, logs || "(vide)");
       } else if (action === "delete") {
         if (!window.confirm(`Supprimer le workload « ${name} » ?`)) return;
         await api(`/workloads/${encodeURIComponent(name)}`, { method: "DELETE" });
