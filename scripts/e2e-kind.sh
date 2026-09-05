@@ -100,4 +100,4 @@ echo "== cleanup =="
 api DELETE "/workloads/${NAME}" -o /dev/null
 kubectl -n openyard wait --for=delete "ingress/${NAME}" --timeout=60s || true
 
-echo "e2e OK"
+echo "e2e OK (default/openyard)"
