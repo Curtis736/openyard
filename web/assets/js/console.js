@@ -208,6 +208,8 @@
               <button class="btn btn-ghost btn-sm" data-action="apply" type="button">Apply</button>
               <button class="btn btn-ghost btn-sm" data-action="status" type="button">Status</button>
               <button class="btn btn-ghost btn-sm" data-action="manifest" type="button">YAML</button>
+              <button class="btn btn-ghost btn-sm" data-action="events" type="button">Events</button>
+              <button class="btn btn-ghost btn-sm" data-action="logs" type="button">Logs</button>
               <button class="btn btn-danger btn-sm" data-action="delete" type="button">Supprimer</button>
             </div>
           </td>
