@@ -24,7 +24,6 @@ from app.cluster import (
     delete_from_cluster,
     read_workload_status,
 )
-from app.observe import list_workload_events, read_workload_logs
 from app.compute import (
     ComputeError,
     compute_driver_name,
@@ -49,6 +48,7 @@ from app.models import (
     WorkloadStats,
     catalog_payload,
 )
+from app.observe import list_workload_events, read_workload_logs
 from app.store import QuotaExceeded, WorkloadStore
 from app.tenancy import delete_project_namespace, ensure_project_namespace
 
