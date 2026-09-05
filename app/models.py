@@ -127,3 +127,14 @@ def catalog_payload() -> list[LinuxImageInfo]:
         )
         for img in list_linux_images()
     ]
+
+
+
+class WorkloadEventOut(BaseModel):
+    type: str
+    reason: str
+    message: str
+    count: int = 1
+    last_timestamp: str = ""
+    involved_kind: str = ""
+    involved_name: str = ""
