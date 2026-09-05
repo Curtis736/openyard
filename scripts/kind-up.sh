@@ -53,4 +53,6 @@ echo "  curl -s -X POST http://127.0.0.1:8080/workloads -H 'Host: openyard.local
 echo "    -d '{\"name\":\"edge\",\"image\":\"nginxinc/nginx-unprivileged:1.27-alpine\",\"port\":8080,\"apply\":true}'"
 echo "  curl -s -H 'Host: edge.openyard.local' http://127.0.0.1:8080/"
 echo "  make e2e"
+echo "  make e2e-tenant"
+echo "Observabilité : prometheus.openyard.local / grafana.openyard.local"
 
