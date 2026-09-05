@@ -11,3 +11,12 @@ Prérequis : `make up` (ingress + control-plane).
 make e2e
 make e2e-tenant
 ```
+
+## Variables
+
+| Var | Défaut | Rôle |
+| --- | --- | --- |
+| `PROJECT` | `e2etenant` | nom projet → ns `oy-$PROJECT` |
+| `NAME` | `tenant-web` / `e2e-web` | workload |
+| `BASE_URL` | `http://127.0.0.1:8080` | entrée ingress |
+| `TIMEOUT_S` | `180` | timeouts |
