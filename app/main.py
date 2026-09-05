@@ -453,7 +453,18 @@ def workload_events(name: str, identity: IdentityDep) -> list[WorkloadEventOut]:
         events = list_workload_events(workload.namespace, workload.name)
     except (ClusterUnavailable, ClusterError) as exc:
         raise _cluster_http(exc) from exc
-    return [WorkloadEventOut(**e.__dict__) for e in events]
+    return [
+        WorkloadEventOut(
+            type=e.type,
+            reason=e.reason,
+            message=e.message,
+            count=e.count,
+            last_timestamp=e.last_timestamp,
+            involved_kind=e.involved_kind,
+            involved_name=e.involved_name,
+        )
+        for e in events
+    ]
 
 
 @app.get("/workloads/{name}/logs", response_class=PlainTextResponse, tags=["workloads"])
