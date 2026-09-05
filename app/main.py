@@ -446,7 +446,12 @@ def workload_manifest(
 
 
 
-@app.get("/workloads/{name}/events", response_model=list[WorkloadEventOut], tags=["workloads"])
+@app.get(
+    "/workloads/{name}/events",
+    response_model=list[WorkloadEventOut],
+    tags=["workloads"],
+    summary="Events Kubernetes du workload",
+)
 def workload_events(name: str, identity: IdentityDep) -> list[WorkloadEventOut]:
     workload = get_workload(name, identity)
     try:
@@ -467,7 +472,12 @@ def workload_events(name: str, identity: IdentityDep) -> list[WorkloadEventOut]:
     ]
 
 
-@app.get("/workloads/{name}/logs", response_class=PlainTextResponse, tags=["workloads"])
+@app.get(
+    "/workloads/{name}/logs",
+    response_class=PlainTextResponse,
+    tags=["workloads"],
+    summary="Logs pod du workload",
+)
 def workload_logs(name: str, identity: IdentityDep, tail: int = 200) -> PlainTextResponse:
     workload = get_workload(name, identity)
     tail = max(1, min(tail, 5000))
