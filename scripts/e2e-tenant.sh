@@ -100,4 +100,4 @@ fi
 echo "== cleanup =="
 api_auth DELETE "/workloads/${NAME}" -o /dev/null || true
 api_auth DELETE "/projects/${PROJECT}" -o /dev/null || true
-echo "e2e tenant OK"
+echo "e2e tenant OK (ns=${NS})"
