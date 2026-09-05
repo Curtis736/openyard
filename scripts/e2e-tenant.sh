@@ -5,7 +5,7 @@ set -euo pipefail
 
 HOST_HEADER="${HOST_HEADER:-openyard.local}"
 BASE_URL="${BASE_URL:-http://127.0.0.1:8080}"
-PROJECT="${PROJECT:-e2etenant}"
+PROJECT="${PROJECT:-e2etenant}"  # → namespace oy-e2etenant
 NAME="${NAME:-tenant-web}"
 IMAGE="${IMAGE:-nginxinc/nginx-unprivileged:1.27-alpine}"
 PORT="${PORT:-8080}"
