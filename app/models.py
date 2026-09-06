@@ -32,12 +32,14 @@ class ProjectPublic(BaseModel):
     name: str
     namespace: str
     pods_quota: int
+    instances_quota: int = 5
     cpu_quota: str
     memory_quota: str
     created_at: datetime
     message: str = ""
     api_key_set: bool = False
     pods_used: int = 0
+    instances_used: int = 0
 
 
 class WorkloadCreate(BaseModel):
