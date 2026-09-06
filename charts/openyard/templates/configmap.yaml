@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "openyard.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "openyard.labels" . | nindent 4 }}
+data:
+  LOG_LEVEL: {{ .Values.env.LOG_LEVEL | quote }}
+  OPENYARD_NAMESPACE: {{ .Release.Namespace | quote }}
+  OPENYARD_CLUSTER: {{ .Values.env.OPENYARD_CLUSTER | quote }}
+  OPENYARD_DB: {{ .Values.env.OPENYARD_DB | quote }}
+  OPENYARD_INGRESS_DOMAIN: {{ .Values.ingress.host | quote }}
+  OPENYARD_COMPUTE: {{ .Values.env.OPENYARD_COMPUTE | quote }}
+  OPENYARD_ALLOWED_IMAGE_PREFIXES: {{ .Values.env.OPENYARD_ALLOWED_IMAGE_PREFIXES | quote }}
