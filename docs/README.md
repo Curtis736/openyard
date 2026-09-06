@@ -9,4 +9,4 @@
 | [observability.md](observability.md) | Prometheus + Grafana |
 | [e2e.md](e2e.md) | Smokes kind + multi-tenant |
 
-Points ops à connaître : **PVC** `openyard-data`, **Secret** admin, **allowlist** d’images (voir Architecture / Sécurité).
+Points ops : **PVC**, **Secret**, **allowlist**, **Prometheus/Grafana**, **e2e tenant**, **Events/Logs** console.
