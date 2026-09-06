@@ -7,6 +7,7 @@ import subprocess
 from dataclasses import dataclass
 from threading import Lock
 
+from app.cloudinit import write_cloud_init_file
 from app.linux_images import multipass_alias, resolve_linux_image
 from app.models import Instance, InstanceCreate
 
