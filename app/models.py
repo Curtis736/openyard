@@ -115,6 +115,7 @@ class Instance(BaseModel):
     ipv4: str = ""
     driver: str = "sim"
     message: str = ""
+    ssh_key_set: bool = False
 
 
 class LinuxImageInfo(BaseModel):
