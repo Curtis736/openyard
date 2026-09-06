@@ -129,3 +129,13 @@ sequenceDiagram
 | Obs | `k8s/observability/` |
 | Tenant e2e | `scripts/e2e-tenant.sh` |
 | Events/logs | `app/observe.py` + console |
+
+## Packaging Helm
+
+```mermaid
+flowchart LR
+  Values[values.yaml] --> Chart[charts/openyard]
+  Chart --> K8s[Deploy/Svc/Ingress/PVC/Secret]
+```
+
+Alternative à Kustomize pour GitOps (`helm upgrade --install`).
