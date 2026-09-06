@@ -21,6 +21,7 @@ class Project(BaseModel):
     namespace: str
     api_key: str = ""
     pods_quota: int = 10
+    instances_quota: int = 5
     cpu_quota: str = "1"
     memory_quota: str = "1Gi"
     created_at: datetime
