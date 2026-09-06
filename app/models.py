@@ -11,6 +11,7 @@ from app.linux_images import list_linux_images, resolve_linux_image
 class ProjectCreate(BaseModel):
     name: str = Field(min_length=1, max_length=40, pattern=r"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$")
     pods_quota: int = Field(default=10, ge=1, le=50)
+    instances_quota: int = Field(default=5, ge=0, le=20)
     cpu_quota: str = Field(default="1", pattern=r"^[0-9]+m?$|^[0-9]+(\.[0-9]+)?$")
     memory_quota: str = Field(default="1Gi", pattern=r"^[0-9]+(Mi|Gi)$")
 
