@@ -111,6 +111,7 @@ class WorkloadStore:
                 namespace=self._default_namespace,
                 api_key="",
                 pods_quota=20,
+                instances_quota=10,
                 cpu_quota="2",
                 memory_quota="2Gi",
                 created_at=datetime.now(UTC),
