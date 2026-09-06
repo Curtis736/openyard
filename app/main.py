@@ -151,6 +151,7 @@ def _to_public(project: Project) -> ProjectPublic:
         message=project.message,
         api_key_set=bool(project.api_key),
         pods_used=store.pods_used(project.name),
+        instances_used=store.instances_used(project.name),
     )
 
 
