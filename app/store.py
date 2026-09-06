@@ -280,6 +280,15 @@ class WorkloadStore:
         with self._lock:
             if self._get_instance(project.name, payload.name) is not None:
                 raise KeyError(payload.name)
+            used_row = self._conn.execute(
+                "SELECT COUNT(*) AS c FROM instances WHERE project = ?",
+                (project.name,),
+            ).fetchone()
+            count = int(used_row["c"] if used_row else 0)
+            if count >= project.instances_quota:
+                raise QuotaExceeded(
+                    f"quota instances dépassé ({count}/{project.instances_quota})"
+                )
             meta = resolve_linux_image(payload.image)
             instance = Instance(
                 name=payload.name,
@@ -293,6 +302,7 @@ class WorkloadStore:
                 status="pending",
                 driver=driver,
                 message=f"VM Linux {meta['name']}",
+                ssh_key_set=bool(payload.ssh_authorized_key.strip()),
             )
             self._put_instance(instance)
             return instance
