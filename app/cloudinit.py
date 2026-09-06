@@ -18,15 +18,17 @@ def render_cloud_init(ssh_authorized_key: str) -> str:
     key = resolve_ssh_key(ssh_authorized_key)
     if not key:
         return ""
-    # single-line key expected
-    return (
-        "#cloud-config\n"
-        "users:\n"
-        "  - default\n"
-        "  - name: ubuntu\n"
-        "    ssh_authorized_keys:\n"
-        f"      - {key}\n"
-        "ssh_pwauth: false\n"
+    return "\n".join(
+        [
+            "#cloud-config",
+            "users:",
+            "  - default",
+            "  - name: ubuntu",
+            "    ssh_authorized_keys:",
+            f"      - {key}",
+            "ssh_pwauth: false",
+            "",
+        ]
     )
 
 
