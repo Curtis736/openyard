@@ -1,4 +1,4 @@
-.PHONY: help lint test run compose up down build manifests e2e e2e-tenant secret obs
+.PHONY: help lint test run compose up down build manifests e2e e2e-tenant secret obs helm
 
 help:
 	@echo "lint       ruff"
