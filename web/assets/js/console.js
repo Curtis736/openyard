@@ -328,6 +328,7 @@
     const payload = {
       name: projectForm.name.value.trim(),
       pods_quota: Number(projectForm.pods_quota.value),
+      instances_quota: Number(projectForm.instances_quota?.value || 5),
       cpu_quota: projectForm.cpu_quota.value.trim(),
       memory_quota: projectForm.memory_quota.value.trim(),
     };
