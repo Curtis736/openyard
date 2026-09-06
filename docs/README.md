@@ -8,5 +8,6 @@
 | [console.md](console.md) | Console web |
 | [observability.md](observability.md) | Prometheus + Grafana |
 | [e2e.md](e2e.md) | Smokes kind + multi-tenant |
+| [helm.md](helm.md) | Chart GitOps |
 
 Points ops : **PVC**, **Secret**, **allowlist**, **Prometheus/Grafana**, **e2e tenant**, **Events/Logs** console.
