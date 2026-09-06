@@ -243,6 +243,10 @@
             Mémoire (MiB)
             <input id="memory_mb" name="memory_mb" type="number" min="256" max="8192" step="256" value="1024" required />
           </label>
+          <label>
+            SSH public key (Multipass cloud-init)
+            <input id="ssh_authorized_key" name="ssh_authorized_key" type="text" placeholder="ssh-ed25519 AAAA… (optionnel)" />
+          </label>
           <button class="btn btn-solid" type="submit">Lancer la VM</button>
         </form>
       </aside>
