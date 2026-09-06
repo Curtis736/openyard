@@ -13,6 +13,7 @@ help:
 	@echo "secret     crée/maj le Secret admin (OPENYARD_API_KEY)"
 	@echo "obs        Prometheus + Grafana (cluster déjà up)"
 	@echo "e2e-tenant smoke multi-tenant oy-* (cluster déjà up)"
+	@echo "helm       helm template charts/openyard"
 
 lint:
 	ruff check .
