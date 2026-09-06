@@ -144,6 +144,7 @@ def _to_public(project: Project) -> ProjectPublic:
         name=project.name,
         namespace=project.namespace,
         pods_quota=project.pods_quota,
+        instances_quota=project.instances_quota,
         cpu_quota=project.cpu_quota,
         memory_quota=project.memory_quota,
         created_at=project.created_at,
