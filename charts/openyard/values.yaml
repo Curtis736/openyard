@@ -1,0 +1,47 @@
+image:
+  repository: ghcr.io/curtis736/openyard
+  tag: latest
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: openyard-control
+
+serviceAccount:
+  create: true
+  name: openyard-control
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  className: nginx
+  host: openyard.local
+
+persistence:
+  enabled: true
+  size: 1Gi
+  storageClass: ""
+  accessMode: ReadWriteOnce
+
+apiKey: ""
+
+env:
+  LOG_LEVEL: info
+  OPENYARD_NAMESPACE: openyard
+  OPENYARD_CLUSTER: "true"
+  OPENYARD_DB: /data/openyard.db
+  OPENYARD_INGRESS_DOMAIN: openyard.local
+  OPENYARD_COMPUTE: sim
+  OPENYARD_ALLOWED_IMAGE_PREFIXES: "nginxinc/,nginx:,hashicorp/,ghcr.io/curtis736/,registry.k8s.io/"
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 192Mi
+
+replicaCount: 1
