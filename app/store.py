@@ -187,6 +187,13 @@ class WorkloadStore:
                 ).fetchall()
             )
 
+    def instances_used(self, project: str) -> int:
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT COUNT(*) AS c FROM instances WHERE project = ?", (project,)
+            ).fetchone()
+            return int(row["c"] if row else 0)
+
     def create(self, payload: WorkloadCreate, *, project: Project) -> Workload:
         with self._lock:
             if self._get_workload(project.name, payload.name) is not None:
