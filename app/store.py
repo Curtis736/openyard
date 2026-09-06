@@ -131,6 +131,7 @@ class WorkloadStore:
                 namespace=project_namespace(payload.name),
                 api_key=generate_api_key(),
                 pods_quota=payload.pods_quota,
+                instances_quota=payload.instances_quota,
                 cpu_quota=payload.cpu_quota,
                 memory_quota=payload.memory_quota,
                 created_at=datetime.now(UTC),
