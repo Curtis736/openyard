@@ -50,3 +50,6 @@ obs:
 
 e2e-tenant:
 	./scripts/e2e-tenant.sh
+
+helm:
+	helm template openyard charts/openyard --namespace openyard
