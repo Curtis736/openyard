@@ -1,0 +1,12 @@
+OpenYard {{ .Chart.AppVersion }} installed in {{ .Release.Namespace }}.
+
+Host : {{ .Values.ingress.host }}
+Image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+PVC  : {{ if .Values.persistence.enabled }}{{ .Values.persistence.size }}{{ else }}disabled{{ end }}
+API key Secret: {{ if .Values.apiKey }}set{{ else }}empty (auth off){{ end }}
+
+  helm upgrade --install openyard charts/openyard \
+    --namespace openyard --create-namespace \
+    --set image.tag=sha-abc \
+    --set ingress.host=openyard.example.com \
+    --set apiKey=change-me
