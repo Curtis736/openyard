@@ -336,6 +336,7 @@
       const created = await api("/projects", { method: "POST", body: JSON.stringify(payload) });
       projectForm.reset();
       projectForm.pods_quota.value = "10";
+      if (projectForm.instances_quota) projectForm.instances_quota.value = "5";
       projectForm.cpu_quota.value = "1";
       projectForm.memory_quota.value = "1Gi";
       if (created.api_key) {
