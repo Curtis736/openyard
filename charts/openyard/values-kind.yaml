@@ -1,0 +1,12 @@
+# Overlay values for kind / local demos
+image:
+  repository: openyard
+  tag: local
+  pullPolicy: IfNotPresent
+ingress:
+  host: openyard.local
+apiKey: ""
+persistence:
+  size: 1Gi
+env:
+  OPENYARD_COMPUTE: sim
