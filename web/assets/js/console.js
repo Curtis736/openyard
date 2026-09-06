@@ -260,7 +260,7 @@
             <div class="image">${p.message || ""}</div>
           </td>
           <td class="mono">${p.namespace}</td>
-          <td class="mono">${p.pods_used}/${p.pods_quota}</td>
+          <td class="mono">${p.pods_used}/${p.pods_quota} pods · ${p.instances_used ?? 0}/${p.instances_quota ?? 5} VM</td>
           <td>
             <div class="row-actions">
               <button class="btn btn-ghost btn-sm" data-paction="use" type="button">Utiliser</button>
