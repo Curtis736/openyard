@@ -516,6 +516,8 @@ def create_instance(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Instance déjà enregistrée : {payload.name}",
         ) from exc
+    except QuotaExceeded as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
     if not payload.launch:
         return instance
