@@ -57,6 +57,9 @@ jobs:
           kustomize build k8s/base | kubeconform -strict -ignore-missing-schemas -summary
           kustomize build k8s/overlays/kind | kubeconform -strict -ignore-missing-schemas -summary
           kustomize build k8s/observability | kubeconform -strict -ignore-missing-schemas -summary
+          curl -sSL https://get.helm.sh/helm-v3.16.2-linux-amd64.tar.gz | tar -xz
+          sudo mv linux-amd64/helm /usr/local/bin/
+          helm template openyard charts/openyard --namespace openyard | kubeconform -strict -ignore-missing-schemas -summary
 
   e2e-kind:
     name: E2E kind
