@@ -121,3 +121,11 @@ sequenceDiagram
   K-->>A: text
   A-->>C: text/plain
 ```
+
+## Fichiers clés (différenciateurs)
+
+| Zone | Chemin |
+| --- | --- |
+| Obs | `k8s/observability/` |
+| Tenant e2e | `scripts/e2e-tenant.sh` |
+| Events/logs | `app/observe.py` + console |
