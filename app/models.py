@@ -94,6 +94,7 @@ class InstanceCreate(BaseModel):
     vcpus: int = Field(default=1, ge=1, le=4)
     memory_mb: int = Field(default=1024, ge=256, le=8192)
     launch: bool = True
+    ssh_authorized_key: str = Field(default="", max_length=2048)
 
     @field_validator("image")
     @classmethod
