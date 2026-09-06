@@ -233,6 +233,7 @@ GitHub Actions : Ruff, Pytest, Kustomize + kubeconform (base, kind, **observabil
 | `make secret` | Secret admin (`KEY=` / `OPENYARD_API_KEY`) |
 | `make obs` | Prometheus + Grafana |
 | `make e2e-tenant` | Smoke multi-tenant `oy-*` |
+| `make helm` | `helm template charts/openyard` |
 
 ## Limites connues
 
