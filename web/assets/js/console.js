@@ -419,6 +419,7 @@
       image: instanceForm.image.value.trim(),
       vcpus: Number(instanceForm.vcpus.value),
       memory_mb: Number(instanceForm.memory_mb.value),
+      ssh_authorized_key: (instanceForm.ssh_authorized_key?.value || "").trim(),
       launch: true,
     };
     try {
