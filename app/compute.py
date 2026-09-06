@@ -60,6 +60,7 @@ class _SimDriver:
                 message=(
                     f"VM Linux simulée · {meta['name']} · "
                     f"{payload.vcpus} vCPU · {payload.memory_mb} MiB"
+                    + (" · ssh key" if payload.ssh_authorized_key.strip() else "")
                 ),
             )
             self._state[payload.name] = runtime
