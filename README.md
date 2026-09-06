@@ -11,6 +11,7 @@
 - **Persistance** : SQLite (`OPENYARD_DB`)
 - **CI** : lint, tests, kubeconform, Trivy, **e2e kind** + **e2e tenant**
 - **Observabilité** : Prometheus + Grafana (`openyard-obs`)
+- **Helm** : `charts/openyard` (image, host, PVC, apiKey)
 
 Plan de contrôle, démos, RBAC et quotas tournent sur **kind** — sans facture cloud.
 
