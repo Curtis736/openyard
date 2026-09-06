@@ -125,6 +125,9 @@ class _MultipassDriver:
             "--memory",
             mem,
         ]
+        cloudinit = write_cloud_init_file(payload.ssh_authorized_key)
+        if cloudinit is not None:
+            cmd.extend(["--cloud-init", str(cloudinit)])
         try:
             subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=600)
         except subprocess.CalledProcessError as exc:
@@ -132,6 +135,9 @@ class _MultipassDriver:
             raise ComputeError(f"multipass launch échoué : {err}") from exc
         except subprocess.TimeoutExpired as exc:
             raise ComputeError("multipass launch timeout") from exc
+        finally:
+            if cloudinit is not None:
+                cloudinit.unlink(missing_ok=True)
         runtime = self.status(payload.name)
         meta = resolve_linux_image(payload.image)
         return InstanceRuntime(
