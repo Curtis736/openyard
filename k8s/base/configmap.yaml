@@ -13,4 +13,5 @@ data:
   OPENYARD_DB: /data/openyard.db
   OPENYARD_INGRESS_DOMAIN: openyard.local
   OPENYARD_COMPUTE: sim
+  # OPENYARD_SSH_AUTHORIZED_KEY via Secret si besoin (Multipass host)
   OPENYARD_ALLOWED_IMAGE_PREFIXES: "nginxinc/,nginx:,hashicorp/,ghcr.io/curtis736/,registry.k8s.io/"
