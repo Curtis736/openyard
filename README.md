@@ -41,7 +41,10 @@ les rend lisibles :
 
 ## Site & console
 
-Landing publique : [curtis736.github.io/openyard](https://curtis736.github.io/openyard/)  
+Landing publique :
+- Vercel : [openyard-zeta.vercel.app](https://openyard-zeta.vercel.app)
+- GitHub Pages : [curtis736.github.io/openyard](https://curtis736.github.io/openyard/)
+
 (console + API = self-host local, voir ci-dessous)
 
 | URL | Contenu |
