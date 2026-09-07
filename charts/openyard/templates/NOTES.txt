@@ -10,3 +10,6 @@ API key Secret: {{ if .Values.apiKey }}set{{ else }}empty (auth off){{ end }}
     --set image.tag=sha-abc \
     --set ingress.host=openyard.example.com \
     --set apiKey=change-me
+
+Compute: set OPENYARD_COMPUTE / SSH key for Multipass hosts.
+Projects enforce instances_quota (default 5).
