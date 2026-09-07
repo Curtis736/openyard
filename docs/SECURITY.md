@@ -49,3 +49,7 @@ volontaire pour un labo kind.
 
 Le job CI tenant valide le scoping namespace + clé `oy_…`.
 Ce n’est pas une preuve d’isolement réseau fort (NetworkPolicy kind off).
+
+## SSH cloud-init
+
+Clé publique injectée au boot Multipass. Pas de clé privée dans OpenYard.
