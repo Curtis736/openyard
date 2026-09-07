@@ -33,6 +33,7 @@ jobs:
           cp -R web/assets _site/assets
           # Chemins relatifs pour https://<user>.github.io/openyard/
           sed -i 's|href="/assets/|href="./assets/|g' _site/index.html
+          sed -i 's|href="/"|href="./"|g' _site/index.html
           # Console / docs OpenAPI = self-host ; liens publics vers le dépôt
           sed -i 's|href="/console"|href="https://github.com/Curtis736/openyard#site--console"|g' _site/index.html
           sed -i 's|href="/docs"|href="https://github.com/Curtis736/openyard/tree/main/docs"|g' _site/index.html
