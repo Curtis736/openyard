@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "image": {"type": "object"},
+    "ingress": {"type": "object", "properties": {"host": {"type": "string"}}},
+    "persistence": {"type": "object"},
+    "apiKey": {"type": "string"}
+  }
+}
