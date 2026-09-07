@@ -139,3 +139,15 @@ flowchart LR
 ```
 
 Alternative à Kustomize pour GitOps (`helm upgrade --install`).
+
+## Compute quotas + SSH
+
+```mermaid
+flowchart TB
+  P[Project.instances_quota]
+  API[POST /instances]
+  MP[Multipass --cloud-init]
+
+  API -->|count < quota| Store
+  API -->|ssh_authorized_key| MP
+```
