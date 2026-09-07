@@ -35,6 +35,7 @@ env:
   OPENYARD_INGRESS_DOMAIN: openyard.local
   OPENYARD_COMPUTE: sim
   OPENYARD_ALLOWED_IMAGE_PREFIXES: "nginxinc/,nginx:,hashicorp/,ghcr.io/curtis736/,registry.k8s.io/"
+  # SSH: set OPENYARD_SSH_AUTHORIZED_KEY via extra Secret on Multipass hosts
 
 resources:
   requests:
