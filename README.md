@@ -7,7 +7,7 @@
 
 - **Workloads** : image Docker → Deployment + Service + Ingress → pods
 - **Projets (tenants)** : namespace `oy-*`, quotas pods/CPU/RAM, clé API
-- **VM Linux** : Ubuntu 22.04 / 24.04 (driver `sim` ou **Multipass**)
+- **VM Linux** : Ubuntu 22.04 / 24.04 (driver `sim` ou **Multipass** + cloud-init SSH)
 - **Persistance** : SQLite (`OPENYARD_DB`)
 - **CI** : lint, tests, kubeconform, Trivy, **e2e kind** + **e2e tenant**
 - **Observabilité** : Prometheus + Grafana (`openyard-obs`)
