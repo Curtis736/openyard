@@ -10,3 +10,16 @@ helm upgrade --install openyard ./charts/openyard -n openyard --create-namespace
   --set image.tag=sha-$(git rev-parse --short HEAD) \
   --set ingress.host=openyard.local
 ```
+
+## Exemple GitOps
+
+```yaml
+# values-prod.yaml
+image:
+  tag: 1.0.0
+ingress:
+  host: openyard.example.com
+persistence:
+  size: 5Gi
+apiKey: ""
+```
