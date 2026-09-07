@@ -23,15 +23,3 @@ persistence:
   size: 5Gi
 apiKey: ""
 ```
-
-<!-- spaced 65 -->
-
-<!-- spaced 66 -->
-
-<!-- spaced 67 -->
-
-<!-- spaced 68 -->
-
-<!-- spaced 69 -->
-
-<!-- spaced 70 -->
