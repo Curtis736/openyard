@@ -24,3 +24,10 @@ Console : http://127.0.0.1:8000/console
 ## Observabilité
 
 Après `make up`, Grafana (anon Viewer) expose le dashboard **OpenYard**.
+
+## Helm
+
+```bash
+make helm
+helm template openyard charts/openyard -f charts/openyard/values-kind.yaml | head
+```
