@@ -235,6 +235,13 @@ GitHub Actions : Ruff, Pytest, Kustomize + kubeconform (base, kind, **observabil
 | `make e2e-tenant` | Smoke multi-tenant `oy-*` |
 | `make helm` | `helm template charts/openyard` |
 
+### Helm (extrait)
+
+```bash
+helm upgrade --install openyard ./charts/openyard -n openyard --create-namespace \
+  --set image.tag=1.0.0 --set ingress.host=openyard.local --set apiKey=''
+```
+
 ## Limites connues
 
 - Multi-tenant soft (namespaces `oy-*` + quotas) : pas d’IAM cloud ni facturation
