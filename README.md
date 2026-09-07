@@ -41,6 +41,9 @@ les rend lisibles :
 
 ## Site & console
 
+Landing publique : [curtis736.github.io/openyard](https://curtis736.github.io/openyard/)  
+(console + API = self-host local, voir ci-dessous)
+
 | URL | Contenu |
 | --- | --- |
 | `/` | Landing OpenYard |
